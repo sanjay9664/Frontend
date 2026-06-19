@@ -42,12 +42,16 @@ const getAvatarBg = (name = '') => {
 /* ═══════════════════════ COMPONENT ════════════════════════ */
 const UserManagement = () => {
   /* ── list state ── */
-  const [users,        setUsers]        = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [apiError,     setApiError]     = useState(null);
-  const [pagination,   setPagination]   = useState({ page:1, pageSize:20, total:0, totalPages:1 });
-  const [searchTerm,   setSearchTerm]   = useState('');
-  const [saveMsg,      setSaveMsg]      = useState(null);
+  const [users,              setUsers]              = useState([]);
+  const [loading,            setLoading]            = useState(true);
+  const [apiError,           setApiError]           = useState(null);
+  const [pagination,         setPagination]         = useState({ page:1, pageSize:20, total:0, totalPages:1 });
+  const [searchTerm,         setSearchTerm]         = useState('');
+  const [saveMsg,            setSaveMsg]            = useState(null);
+  const [showSochiotAdmins,  setShowSochiotAdmins]  = useState(false);
+  const [filterRole,         setFilterRole]         = useState('');
+  const [filterStatus,       setFilterStatus]       = useState('');
+  const [filterSync,         setFilterSync]         = useState('');
 
   /* ── modal / form state ── */
   const [showModal,    setShowModal]    = useState(false);
@@ -80,15 +84,29 @@ const UserManagement = () => {
   };
 
   /* ── data fetchers ── */
-  const fetchUsers = async (page = 1) => {
+  const fetchUsers = async (page = 1, forceSochiot = showSochiotAdmins) => {
     setLoading(true); setApiError(null);
     try {
-      const res  = await fetchWithAuth(`http://localhost:3001/api/v1/users/all?page=${page}&pageSize=${pagination.pageSize}`);
+      const endpoint = forceSochiot
+        ? `http://localhost:3001/api/v1/users/all?page=${page}&pageSize=${pagination.pageSize}`
+        : `http://localhost:3001/api/v1/users?page=${page}&pageSize=${pagination.pageSize}`;
+      const res  = await fetchWithAuth(endpoint);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.success && json.data) {
-        setUsers(json.data.list || []);
-        setPagination({ page: json.data.page, pageSize: json.data.pageSize, total: json.data.total, totalPages: json.data.totalPages });
+        if (forceSochiot) {
+          setUsers(json.data.list || []);
+          setPagination({ page: json.data.page, pageSize: json.data.pageSize, total: json.data.total, totalPages: json.data.totalPages });
+        } else {
+          setUsers(json.data || []);
+          const meta = json.meta || {};
+          setPagination({
+            page: meta.page || 1,
+            pageSize: meta.pageSize || pagination.pageSize,
+            total: meta.total || 0,
+            totalPages: meta.totalPages || 1
+          });
+        }
       } else setUsers([]);
     } catch (e) {
       console.error(e);
@@ -224,11 +242,28 @@ const UserManagement = () => {
 
   /* ── filtered list ── */
   const filteredUsers = useMemo(() =>
-    users.filter(u =>
-      u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.role?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [users, searchTerm]);
+    users.filter(u => {
+      const matchesSearch =
+        u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.role?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        u.roleName?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchedRole = roles.find(r => String(r.id) === String(u.roleId || u.role?.id));
+      const roleIdStr = String(u.role?.id || u.roleId || matchedRole?.id || '');
+      const matchesRole = filterRole ? roleIdStr === filterRole : true;
+
+      const isActive = u.enabled !== false;
+      const matchesStatus = filterStatus
+        ? (filterStatus === 'active' ? isActive : !isActive)
+        : true;
+
+      const matchesSync = filterSync
+        ? (filterSync === 'synced' ? u.syncedToBMS : !u.syncedToBMS)
+        : true;
+
+      return matchesSearch && matchesRole && matchesStatus && matchesSync;
+    }), [users, searchTerm, filterRole, filterStatus, filterSync, roles]);
 
   const enabledCount = Object.keys(moduleDetails).filter(k => formConfig[k] !== false).length;
   const totalMods    = Object.keys(moduleDetails).length;
@@ -246,15 +281,76 @@ const UserManagement = () => {
       {/* ── Toolbar ── */}
       <div className="um-toolbar mb-4">
         <div className="d-flex align-items-center gap-3 flex-wrap justify-content-between">
-          <div className="um-search-box">
-            <Search size={15} className="um-search-icon" />
-            <input
-              type="text"
-              placeholder="Search operators by name or email..."
-              className="um-search-input"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+          <div className="d-flex align-items-center gap-2 flex-wrap">
+            <div className="um-search-box">
+              <Search size={15} className="um-search-icon" />
+              <input
+                type="text"
+                placeholder="Search operators by name or email..."
+                className="um-search-input"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            {/* Role Filter */}
+            <select
+              className="um-filter-select"
+              value={filterRole}
+              onChange={e => setFilterRole(e.target.value)}
+            >
+              <option value="">All Roles</option>
+              {roles.map(r => (
+                <option key={r.id} value={String(r.id)}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Active Status Filter */}
+            <select
+              className="um-filter-select"
+              value={filterStatus}
+              onChange={e => setFilterStatus(e.target.value)}
+            >
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="disabled">Disabled</option>
+            </select>
+
+            {/* Sync Status Filter */}
+            <select
+              className="um-filter-select"
+              value={filterSync}
+              onChange={e => setFilterSync(e.target.value)}
+            >
+              <option value="">All Sync States</option>
+              <option value="synced">Synced to BMS</option>
+              <option value="unsynced">Sync Now</option>
+            </select>
+
+            <button
+              onClick={() => {
+                const nextState = !showSochiotAdmins;
+                setShowSochiotAdmins(nextState);
+                fetchUsers(1, nextState);
+              }}
+              className={showSochiotAdmins ? "um-btn-primary" : "um-btn-secondary"}
+              style={{
+                borderRadius: '10px',
+                padding: '0 1rem',
+                fontSize: '0.82rem',
+                height: '38px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontWeight: 800,
+                border: showSochiotAdmins ? 'none' : '1px solid rgba(255,255,255,0.1)'
+              }}
+            >
+              <RefreshCw size={13} style={{ animation: loading ? 'umSpin 1.5s linear infinite' : 'none' }} />
+              {showSochiotAdmins ? 'Show Local Operators' : 'Show Sochiot Admins'}
+            </button>
           </div>
           <div className="d-flex align-items-center gap-3">
             {saveMsg && (
@@ -313,8 +409,9 @@ const UserManagement = () => {
                   </thead>
                   <tbody>
                     {filteredUsers.map((user) => {
-                      const roleName  = user.role?.name || '—';
-                      const roleType  = user.role?.roleType || '';
+                      const matchedRole = roles.find(r => String(r.id) === String(user.roleId || user.role?.id));
+                      const roleName  = user.role?.name || user.roleName || matchedRole?.name || '—';
+                      const roleType  = user.role?.roleType || matchedRole?.roleType || '';
                       const avatarBg  = getAvatarBg(user.name || '');
                       const initial   = user.name?.charAt(0)?.toUpperCase() || 'U';
                       const isActive  = user.enabled !== false;
@@ -618,6 +715,16 @@ const UserManagement = () => {
         }
         .um-search-input:focus  { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.12); }
         .um-search-input::placeholder { color: #475569; }
+
+        .um-filter-select {
+          background: rgba(255,255,255,0.03) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e") no-repeat right 0.75rem center/8px 10px;
+          border: 1px solid rgba(255,255,255,0.08); border-radius: 10px;
+          color: #94a3b8; font-size: 0.82rem; font-weight: 700;
+          padding: 0.5rem 2rem 0.5rem 0.75rem; outline: none; transition: all 0.2s;
+          cursor: pointer; appearance: none; height: 38px;
+        }
+        .um-filter-select:focus { border-color: #38bdf8; color: #e2e8f0; }
+        .um-filter-select option { background: #0f172a; color: #e2e8f0; }
 
         .um-count-badge {
           display:inline-flex; align-items:center; font-size:0.72rem; font-weight:700; color:#94a3b8;
