@@ -19,6 +19,8 @@ import ConfigTemplates from '../pages/Configuration/Templates';
 import SuperAdminConfig from '../pages/SuperAdmin/SuperAdminConfig';
 import SiteManagement from '../pages/SuperAdmin/SiteManagement';
 import UserManagement from '../pages/Admin/UserManagement';
+import DeviceManagement from '../pages/Admin/DeviceManagement';
+import AreaManagement from '../pages/Admin/AreaManagement';
 import MaintenancePage from '../pages/Maintenance/Index';
 
 // Energy Metering Pages
@@ -175,7 +177,11 @@ const AppRoutes = () => {
 
       {/* Admin / Super Admin Routes */}
       {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
-        <Route path="/admin/manage-users" element={<UserManagement />} />
+        <>
+          <Route path="/admin/manage-users" element={<UserManagement />} />
+          <Route path="/admin/manage-devices" element={<DeviceManagement />} />
+          <Route path="/admin/manage-areas" element={<AreaManagement />} />
+        </>
       )}
 
       {/* Maintenance & Service History */}

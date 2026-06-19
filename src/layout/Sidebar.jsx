@@ -347,6 +347,12 @@ const Sidebar = ({ collapsed }) => {
                     <NavLink to="/admin/manage-users" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
                       User Management
                     </NavLink>
+                    <NavLink to="/admin/manage-devices" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      Device Management
+                    </NavLink>
+                    <NavLink to="/admin/manage-areas" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      Area Management
+                    </NavLink>
                     {(!modulesConfig || modulesConfig["Setting Templates"] !== false) && (
                       <NavLink to="/config/templates" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
                         Setting Templates
