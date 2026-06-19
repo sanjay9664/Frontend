@@ -1,6 +1,6 @@
 const EXTERNAL_API_URL = '/sochiot-auth';
 
-const fetchWithTimeout = async (url, options = {}, timeout = 5000) => {
+const fetchWithTimeout = async (url, options = {}, timeout = 20000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
@@ -12,30 +12,43 @@ const fetchWithTimeout = async (url, options = {}, timeout = 5000) => {
     throw error;
   }
 };
+
+let activeLoginPromise = null;
+
 export const loginToSochiot = async (email, password) => {
-  try {
-    const response = await fetch(`${EXTERNAL_API_URL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email, password })
-    });
-
-    if (!response.ok) {
-      throw new Error('Login failed');
-    }
-
-    const data = await response.json();
-    if (data.token) {
-      localStorage.setItem('sochiot_token', data.token);
-      return data.token;
-    }
-    throw new Error('No token received');
-  } catch (error) {
-    console.error('Auth Error:', error);
-    throw error;
+  if (activeLoginPromise) {
+    return activeLoginPromise;
   }
+
+  activeLoginPromise = (async () => {
+    try {
+      const response = await fetch(`${EXTERNAL_API_URL}/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem('sochiot_token', data.token);
+        return data.token;
+      }
+      throw new Error('No token received');
+    } catch (error) {
+      console.error('Auth Error:', error);
+      throw error;
+    } finally {
+      activeLoginPromise = null;
+    }
+  })();
+
+  return activeLoginPromise;
 };
 
 export const getSochiotUserMe = async () => {
@@ -112,7 +125,7 @@ export const getSochiotDeviceDetails = async (deviceId) => {
       headers: {
         'Authorization': `Bearer ${token}`
       }
-    }, 5000);
+    }, 20000);
     
     if (!response.ok) throw new Error('Failed to fetch device details');
     return await response.json();
@@ -130,7 +143,7 @@ export const getSochiotGatewayStatus = async (clusterId) => {
       headers: {
         'Authorization': `Bearer ${token}`
       }
-    }, 5000);
+    }, 20000);
 
     if (!response.ok) throw new Error('Failed to fetch gateway status');
     return await response.json();
@@ -149,7 +162,7 @@ export const getSochiotDeviceStatus = async (deviceId) => {
       headers: {
         'Authorization': `Bearer ${token}`
       }
-    }, 5000);
+    }, 20000);
 
     if (!response.ok) throw new Error('Failed to fetch device status');
     return await response.json();
