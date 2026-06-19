@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import { Shield, User, Lock, Activity, ArrowRight, Monitor, Settings, Eye, Key, Mail, Cpu, Globe, CheckCircle } from 'lucide-react';
+import { Shield, ArrowRight, Key, Mail, Cpu, Globe, Eye, EyeOff } from 'lucide-react';
 import logo from "../assets/logo.png";
 import heroImg from "./scada_hero.png";
 
@@ -9,6 +9,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [loginMode, setLoginMode] = useState('admin'); 
   const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,8 +19,7 @@ const Login = () => {
     setError('');
 
     try {
-      const apiUrl = '/api';
-      const response = await fetch(`${apiUrl}/auth/login`, {
+      const response = await fetch('https://app.sochiot.com/api/auth-engine/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -31,33 +31,113 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userRole', data.user.role);
-        localStorage.setItem('userData', JSON.stringify(data.user));
-        localStorage.setItem('isAuthenticated', 'true');
+        const token = data.token;
+        localStorage.setItem('token', token);
+        localStorage.setItem('sochiot_token', token);
+
+        // Fetch User Me details with robust fallback logic
+        let meData = {};
+        let profileSuccess = false;
+
+        // Try local backend first
+        try {
+          const meResponse = await fetch('http://localhost:3001/api/v1/users/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (meResponse.ok) {
+            const meDataJson = await meResponse.json();
+            meData = meDataJson.data || meDataJson || {};
+            profileSuccess = true;
+          }
+        } catch (localErr) {
+          console.warn('Failed to fetch profile from local backend:', localErr);
+        }
+
+        // If local backend fails, fall back to Sochiot user me endpoint
+        if (!profileSuccess) {
+          try {
+            const meResponse = await fetch('https://app.sochiot.com/api/auth-engine/user/me', {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (meResponse.ok) {
+              const meDataJson = await meResponse.json();
+              meData = meDataJson.data || meDataJson || {};
+              profileSuccess = true;
+            }
+          } catch (sochiotErr) {
+            console.error('Failed to fetch profile from Sochiot auth:', sochiotErr);
+          }
+        }
+
+        // Determine user role based on /me authorities, roles, isRootUser, or credentials
+        let role = 'USER';
+        const emailLower = credentials.username.toLowerCase();
         
+        const isSuper = (
+          meData.isRootUser === true ||
+          (meData.roles && meData.roles.includes('SUPER_ADMIN')) ||
+          (meData.authorities && (meData.authorities.includes('PERM_SUPER_ADMIN') || meData.authorities.includes('PERM_MANAGE_ALL'))) ||
+          emailLower === 'superadmin@sochiot.com' ||
+          emailLower === 'sa@ismartaccess.com' ||
+          emailLower.startsWith('superadmin@')
+        );
+
+        const isAdmin = (
+          (meData.roles && meData.roles.includes('ADMIN')) ||
+          (meData.authorities && meData.authorities.includes('PERM_MANAGE_ADMINISTRATORS'))
+        );
+
+        if (isSuper) {
+          role = 'SUPER_ADMIN';
+        } else if (isAdmin) {
+          role = 'ADMIN';
+        } else if (meData.roles && meData.roles.length > 0) {
+          role = meData.roles[0];
+        } else if (meData.role) {
+          role = (typeof meData.role === 'object' ? meData.role?.name : meData.role) || 'USER';
+        }
+
+        const userObj = {
+          id: meData.id || meData._id || 'temp-id',
+          name: meData.name || meData.username || 'Super Admin',
+          email: meData.email || credentials.username,
+          role: role,
+          organizationId: meData.organizationId || null
+        };
+
+        localStorage.setItem('userRole', role);
+        localStorage.setItem('userData', JSON.stringify(userObj));
+        localStorage.setItem('isAuthenticated', 'true');
+
+        const localFp = meData.featurePermissions || {};
+        const isSuperRole = role === 'SUPER_ADMIN';
         const sidebarMapping = {
-          "Dashboard": data.config.showDashboard ?? true,
-          "Water Management": data.config.showWaterManagement ?? true,
-          "Motors": data.config.showMotors ?? true,
-          "DG Set": data.config.showDGSet ?? true,
-          "Setting Templates": data.config.showSettingTemplates ?? true,
-          "Alarm System": data.config.showAlarms ?? true,
-          "LT Panel": data.config.showLTPanel ?? true,
-          "Transformer": data.config.showTransformers ?? true,
-          "Fire": data.config.showFirePumps ?? true,
-          "Ticketing": data.config.showTicketing ?? true,
-          "Maintenance": data.config.showMaintenance ?? true,
-          "Service History": data.config.showServiceHistory ?? true,
-          "Daily DPR": data.config.showDailyDPR ?? true,
-          "Energy Metering": data.config.showEnergyMetering ?? true
+          "Dashboard": isSuperRole ? true : (localFp.showDashboard ?? true),
+          "Water Management": isSuperRole ? true : (localFp.showWaterManagement ?? true),
+          "Motors": isSuperRole ? true : (localFp.showMotors ?? true),
+          "DG Set": isSuperRole ? true : (localFp.showDGSet ?? true),
+          "Setting Templates": isSuperRole ? true : (localFp.showSettingTemplates ?? true),
+          "Alarm System": isSuperRole ? true : (localFp.showAlarms ?? true),
+          "LT Panel": isSuperRole ? true : (localFp.showLTPanel ?? true),
+          "Transformer": isSuperRole ? true : (localFp.showTransformers ?? true),
+          "Fire": isSuperRole ? true : (localFp.showFirePumps ?? true),
+          "Ticketing": isSuperRole ? true : (localFp.showTicketing ?? true),
+          "Maintenance": isSuperRole ? true : (localFp.showMaintenance ?? true),
+          "Service History": isSuperRole ? true : (localFp.showServiceHistory ?? true),
+          "Daily DPR": isSuperRole ? true : (localFp.showDailyDPR ?? true),
+          "Energy Metering": isSuperRole ? true : (localFp.showEnergyMetering ?? true)
         };
         localStorage.setItem('scada_modules_config', JSON.stringify(sidebarMapping));
-        localStorage.setItem('scada_submodules_config', JSON.stringify(data.config.submoduleVisibility || {}));
+        localStorage.setItem('scada_submodules_config', JSON.stringify(localFp.submoduleVisibility || {}));
         
         window.dispatchEvent(new Event('storage-update'));
         
-        if (data.user.role === 'SUPER_ADMIN') {
+        if (role === 'SUPER_ADMIN') {
           navigate('/super-admin');
         } else {
           navigate('/dashboard');
@@ -120,33 +200,8 @@ const Login = () => {
       {/* RIGHT SIDE: AUTHENTICATION GATEWAY */}
       <div className="login-form-side flex-grow-1 d-flex align-items-center justify-content-center p-4">
           <div className="login-form-container w-100" style={{ maxWidth: '440px' }}>
-            <div className="text-center mb-5 d-lg-none">
+            <div className="text-center mb-5">
                  <img src={logo} alt="Sochiot" className="mb-4" style={{ height: 60 }} />
-            </div>
-
-            <div className="auth-header mb-5">
-                <h2 className="text-white fw-black mb-1 uppercase tracking-tight">System Login</h2>
-                <p className="text-muted fs-11 fw-bold tracking-widest uppercase opacity-75">Authenticated Personnel Access Node</p>
-                <div className="h-line-scada-short mt-1"></div>
-            </div>
-
-            {/* ROLE TOGGLE */}
-            <div className="role-selector-container mb-5 p-1 rounded-pill border border-white border-opacity-10 d-flex position-relative shadow-inner">
-                <div className={`role-slider ${loginMode === 'user' ? 'slide-right' : ''}`}></div>
-                <button 
-                type="button" 
-                className={`role-btn flex-grow-1 ${loginMode === 'admin' ? 'active' : ''}`}
-                onClick={() => { setLoginMode('admin'); setError(''); setCredentials({ username: '', password: '' }); }}
-                >
-                <Settings size={14} className="me-2" /> ADMIN ACCESS
-                </button>
-                <button 
-                type="button" 
-                className={`role-btn flex-grow-1 ${loginMode === 'user' ? 'active' : ''}`}
-                onClick={() => { setLoginMode('user'); setError(''); setCredentials({ username: '', password: '' }); }}
-                >
-                <Eye size={14} className="me-2" /> USER VIEW
-                </button>
             </div>
 
             {error && (
@@ -171,13 +226,22 @@ const Login = () => {
                     <Form.Group className="mb-5 position-relative">
                     <div className="input-icon-v3"><Key size={18} /></div>
                     <Form.Control 
-                        type="password" 
+                        type={showPassword ? "text" : "password"} 
                         placeholder="••••••••" 
                         className={`scada-input-v3 ${loginMode === 'user' ? 'border-user-v3' : ''}`}
                         value={credentials.password}
                         onChange={(e) => setCredentials({...credentials, password: e.target.value})}
                         required
+                        style={{ paddingRight: '50px' }}
                     />
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent text-muted px-3"
+                        style={{ zIndex: 10, cursor: 'pointer' }}
+                    >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                     </Form.Group>
                 </div>
 
@@ -195,12 +259,6 @@ const Login = () => {
                 )}
                 </Button>
             </Form>
-
-            <div className="mt-5 text-center">
-                 <small className="text-muted fw-bold d-flex align-items-center justify-content-center gap-2 uppercase tracking-tighter" style={{ fontSize: '0.65rem' }}>
-                    <CheckCircle size={12} className="text-success" /> Biometric Identity Verification Enabled
-                 </small>
-            </div>
           </div>
       </div>
 

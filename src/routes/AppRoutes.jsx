@@ -17,6 +17,7 @@ import MotorsOverview from '../pages/Motors/Overview';
 import TicketingSystem from '../pages/Ticketing/Index';
 import ConfigTemplates from '../pages/Configuration/Templates';
 import SuperAdminConfig from '../pages/SuperAdmin/SuperAdminConfig';
+import SiteManagement from '../pages/SuperAdmin/SiteManagement';
 import UserManagement from '../pages/Admin/UserManagement';
 import MaintenancePage from '../pages/Maintenance/Index';
 
@@ -167,9 +168,13 @@ const AppRoutes = () => {
         path="/super-admin"
         element={userRole === 'SUPER_ADMIN' ? <SuperAdminConfig /> : <Navigate to="/dashboard" replace />}
       />
+      <Route
+        path="/super-admin/sites"
+        element={userRole === 'SUPER_ADMIN' ? <SiteManagement /> : <Navigate to="/dashboard" replace />}
+      />
 
-      {/* Admin Routes */}
-      {userRole === 'ADMIN' && (
+      {/* Admin / Super Admin Routes */}
+      {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
         <Route path="/admin/manage-users" element={<UserManagement />} />
       )}
 

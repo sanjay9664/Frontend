@@ -3,7 +3,8 @@ import { NavLink } from 'react-router-dom';
 import {
   Droplets, Activity, Zap, Bell, Battery, ShieldAlert,
   Settings, ClipboardList, PenTool, History, LayoutDashboard,
-  ChevronRight, Gauge, Database, Lock, User, Wind, Leaf, Thermometer
+  ChevronRight, Gauge, Database, Lock, User, Wind, Leaf, Thermometer,
+  Building2
 } from 'lucide-react';
 import { Accordion } from 'react-bootstrap';
 import logo from "../assets/logo.png";
@@ -327,13 +328,6 @@ const Sidebar = ({ collapsed }) => {
             </NavLink>
           )}
 
-          {isAdmin && (
-            <NavLink to="/admin/manage-users" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <User size={20} className="text-success" />
-              {!collapsed && <span className="ms-3 text-success">Manage Users</span>}
-            </NavLink>
-          )}
-
           {(isAdmin || isSuperAdmin) && (
             <Accordion className="sidebar-accordion">
               <Accordion.Item eventKey="admin-config" className="bg-transparent border-0">
@@ -345,6 +339,14 @@ const Sidebar = ({ collapsed }) => {
                 </Accordion.Header>
                 {!collapsed && (
                   <Accordion.Body className="p-0 ps-4">
+                    {isSuperAdmin && (
+                      <NavLink to="/super-admin/sites" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                        Site Management
+                      </NavLink>
+                    )}
+                    <NavLink to="/admin/manage-users" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      User Management
+                    </NavLink>
                     {(!modulesConfig || modulesConfig["Setting Templates"] !== false) && (
                       <NavLink to="/config/templates" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
                         Setting Templates
