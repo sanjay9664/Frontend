@@ -4,7 +4,7 @@ import {
   Plus, Trash2, Save, Search, Settings, X, CheckCircle,
   ShieldAlert, Sliders, MapPin, Building2, HelpCircle, ChevronDown
 } from 'lucide-react';
-import { loginToSochiot } from '../../services/authService';
+
 
 /* ─────────────────────── functional system map / details ─────────────────────── */
 const systemDetails = {
@@ -72,6 +72,9 @@ const FilterSelect = ({ value, onChange, disabled, children }) => {
 };
 
 const AreaManagement = () => {
+  /* ── tab state ── */
+  const [activeTab, setActiveTab] = useState('areas'); // 'areas' or 'buildings'
+
   /* ── list state ── */
   const [areas, setAreas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,31 +101,41 @@ const AreaManagement = () => {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
+  /* ── building form/modal state ── */
+  const [showBuildingModal, setShowBuildingModal] = useState(false);
+  const [buildingFormData, setBuildingFormData] = useState({
+    id: '',
+    name: '',
+    code: '',
+    totalFloors: '',
+    displayOrder: 0,
+    description: '',
+    isActive: true
+  });
+  const [savingBuilding, setSavingBuilding] = useState(false);
+  const [saveBuildingError, setSaveBuildingError] = useState(null);
+
   /* ── relations state ── */
   const [buildings, setBuildings] = useState([]);
   const [sites, setSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState('');
 
   /* ── auth fetch helper ── */
   const fetchWithAuth = async (url, options = {}) => {
     let token = localStorage.getItem('sochiot_token');
     if (!token) {
-      try {
-        await loginToSochiot('sa@ismartaccess.com', 'I0t3ch');
-        token = localStorage.getItem('sochiot_token');
-      } catch (e) {
-        console.error('Login failed:', e);
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
     const headers = { ...options.headers, Authorization: `Bearer ${token}` };
     let r = await fetch(url, { ...options, headers });
     if (r.status === 401) {
-      try {
-        await loginToSochiot('sa@ismartaccess.com', 'I0t3ch');
-        token = localStorage.getItem('sochiot_token');
-      } catch (e) {
-        console.error('Refresh failed:', e);
+      localStorage.removeItem('sochiot_token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
-      r = await fetch(url, { ...options, headers: { ...headers, Authorization: `Bearer ${token}` } });
     }
     return r;
   };
@@ -130,15 +143,13 @@ const AreaManagement = () => {
   /* ── data fetchers ── */
   const fetchSites = async () => {
     try {
-      const res = await fetchWithAuth('http://localhost:3001/api/v1/sites/');
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/`);
       if (res.ok) {
         const j = await res.json();
         const siteList = j.data || [];
         setSites(siteList);
         if (siteList.length > 0) {
-          const siteId = siteList[0].id;
-          fetchBuildings(siteId);
-          fetchAreas(siteId);
+          setSelectedSiteId(String(siteList[0].id));
         }
       }
     } catch (e) {
@@ -148,7 +159,7 @@ const AreaManagement = () => {
 
   const fetchBuildings = async (siteId) => {
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/buildings`);
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/buildings`);
       if (res.ok) {
         const j = await res.json();
         setBuildings(j.data || []);
@@ -162,7 +173,7 @@ const AreaManagement = () => {
     setLoading(true);
     setApiError(null);
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/areas`);
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/areas`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.success && json.data) {
@@ -182,6 +193,13 @@ const AreaManagement = () => {
   useEffect(() => {
     fetchSites();
   }, []);
+
+  useEffect(() => {
+    if (selectedSiteId) {
+      fetchBuildings(selectedSiteId);
+      fetchAreas(selectedSiteId);
+    }
+  }, [selectedSiteId]);
 
   /* ── open modals ── */
   const openCreateModal = () => {
@@ -223,7 +241,7 @@ const AreaManagement = () => {
     setSaving(true);
     setSaveError(null);
 
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
     const isEdit = !!formData.id;
 
     // Build payload matching Area DTO refinements
@@ -247,8 +265,8 @@ const AreaManagement = () => {
 
     try {
       const url = isEdit
-        ? `http://localhost:3001/api/v1/sites/${siteId}/areas/${formData.id}`
-        : `http://localhost:3001/api/v1/sites/${siteId}/areas`;
+        ? `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/areas/${formData.id}`
+        : `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/areas`;
 
       const res = await fetchWithAuth(url, {
         method: isEdit ? 'PATCH' : 'POST',
@@ -276,9 +294,9 @@ const AreaManagement = () => {
   /* ── delete area ── */
   const handleDeleteArea = async (areaId, name) => {
     if (!window.confirm(`Are you sure you want to delete area "${name}"?`)) return;
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/areas/${areaId}`, {
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/areas/${areaId}`, {
         method: 'DELETE'
       });
       const json = await res.json().catch(() => ({}));
@@ -299,9 +317,9 @@ const AreaManagement = () => {
   const handleToggleStatus = async (areaId, name, currentStatus) => {
     const newStatus = !currentStatus;
     setAreas(prev => prev.map(a => a.id === areaId ? { ...a, isActive: newStatus } : a));
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/areas/${areaId}`, {
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/areas/${areaId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: newStatus })
@@ -320,6 +338,137 @@ const AreaManagement = () => {
     }
   };
 
+  /* ── open building modals ── */
+  const openCreateBuildingModal = () => {
+    setBuildingFormData({
+      id: '',
+      name: '',
+      code: '',
+      totalFloors: '',
+      displayOrder: 0,
+      description: '',
+      isActive: true
+    });
+    setSaveBuildingError(null);
+    setShowBuildingModal(true);
+  };
+
+  const openEditBuildingModal = (b) => {
+    setBuildingFormData({
+      id: b.id,
+      name: b.name || '',
+      code: b.code || '',
+      totalFloors: b.totalFloors !== null ? String(b.totalFloors) : '',
+      displayOrder: b.displayOrder || 0,
+      description: b.description || '',
+      isActive: b.isActive !== false
+    });
+    setSaveBuildingError(null);
+    setShowBuildingModal(true);
+  };
+
+  /* ── submit building ── */
+  const handleSubmitBuilding = async (e) => {
+    e.preventDefault();
+    setSavingBuilding(true);
+    setSaveBuildingError(null);
+
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
+    const isEdit = !!buildingFormData.id;
+
+    const payload = {
+      name: buildingFormData.name.trim(),
+      code: buildingFormData.code.trim() || null,
+      totalFloors: buildingFormData.totalFloors !== '' ? parseInt(buildingFormData.totalFloors, 10) : null,
+      displayOrder: buildingFormData.displayOrder ? parseInt(buildingFormData.displayOrder, 10) : 0,
+      description: buildingFormData.description ? buildingFormData.description.trim() : null,
+      isActive: buildingFormData.isActive
+    };
+
+    try {
+      const url = isEdit
+        ? `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/buildings/${buildingFormData.id}`
+        : `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/buildings`;
+
+      const res = await fetchWithAuth(url, {
+        method: isEdit ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.success !== false) {
+        setShowBuildingModal(false);
+        setSaveMsg(isEdit ? `✓ "${buildingFormData.name}" updated!` : `✓ "${buildingFormData.name}" added!`);
+        setTimeout(() => setSaveMsg(null), 4000);
+        fetchBuildings(siteId);
+      } else {
+        setSaveBuildingError(json.message || json.error || `Error ${res.status}`);
+      }
+    } catch (e) {
+      console.error(e);
+      setSaveBuildingError('Network error. Failed to save building.');
+    } finally {
+      setSavingBuilding(false);
+    }
+  };
+
+  /* ── delete building ── */
+  const handleDeleteBuilding = async (buildingId, name) => {
+    if (!window.confirm(`Are you sure you want to delete building "${name}"? This will affect all associated areas and devices.`)) return;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
+    try {
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/buildings/${buildingId}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.success !== false) {
+        setSaveMsg(`✓ Building "${name}" deleted successfully!`);
+        setTimeout(() => setSaveMsg(null), 4000);
+        fetchBuildings(siteId);
+      } else {
+        alert(`Failed to delete building: ${json.message || json.error || `Error ${res.status}`}`);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Network error. Failed to delete building.');
+    }
+  };
+
+  /* ── toggle active status for building ── */
+  const handleToggleBuildingStatus = async (buildingId, name, currentStatus) => {
+    const newStatus = !currentStatus;
+    setBuildings(prev => prev.map(b => b.id === buildingId ? { ...b, isActive: newStatus } : b));
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
+    try {
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/buildings/${buildingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: newStatus })
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.success !== false) {
+        setSaveMsg(`✓ "${name}" status updated to ${newStatus ? 'Active' : 'Inactive'}!`);
+        setTimeout(() => setSaveMsg(null), 3000);
+      } else {
+        alert(`Failed to update status: ${json.message || `Error ${res.status}`}`);
+        setBuildings(prev => prev.map(b => b.id === buildingId ? { ...b, isActive: currentStatus } : b));
+      }
+    } catch (e) {
+      console.error(e);
+      setBuildings(prev => prev.map(b => b.id === buildingId ? { ...b, isActive: currentStatus } : b));
+    }
+  };
+
+  /* ── filtered buildings list ── */
+  const filteredBuildings = useMemo(() => {
+    return buildings.filter(b => {
+      const matchesSearch = b.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            b.code?.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesSearch;
+    });
+  }, [buildings, searchTerm]);
+
   /* ── filtered areas list ── */
   const filteredAreas = useMemo(() => {
     return areas.filter(a => {
@@ -335,9 +484,37 @@ const AreaManagement = () => {
   return (
     <div className="um-wrap">
       {/* ── Page Header ── */}
-      <div className="um-page-header mb-4">
-        <h2 className="um-page-title">Area Management</h2>
-        <p className="um-page-sub">Configure buildings scopes, floors, functional modules, and areas partition.</p>
+      <div className="um-page-header mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div className="um-tab-toggle-group">
+          <button
+            type="button"
+            className={`um-tab-toggle-btn ${activeTab === 'areas' ? 'active' : ''}`}
+            onClick={() => setActiveTab('areas')}
+          >
+            Areas
+          </button>
+          <button
+            type="button"
+            className={`um-tab-toggle-btn ${activeTab === 'buildings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('buildings')}
+          >
+            Buildings
+          </button>
+        </div>
+
+        <div className="d-flex align-items-center gap-2">
+          <span className="text-secondary font-monospace" style={{ fontSize: '0.78rem', fontWeight: 800 }}>ACTIVE SITE:</span>
+          <select
+            className="um-filter-select font-semibold"
+            style={{ minWidth: '220px', background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+            value={selectedSiteId}
+            onChange={(e) => setSelectedSiteId(e.target.value)}
+          >
+            {sites.map(s => (
+              <option key={s.id} value={String(s.id)}>{s.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* ── Toolbar ── */}
@@ -348,46 +525,53 @@ const AreaManagement = () => {
               <Search size={15} className="um-search-icon" />
               <input
                 type="text"
-                placeholder="Search area name..."
+                placeholder={activeTab === 'areas' ? "Search area name..." : "Search building name or code..."}
                 className="um-search-input"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
 
-            {/* Scope filter */}
-            <FilterSelect
-              value={filterScope}
-              onChange={(e) => setFilterScope(e.target.value)}
-            >
-              <option value="">All Scopes</option>
-              <option value="SITE">Site Level</option>
-              <option value="BUILDING">Building Level</option>
-            </FilterSelect>
+            {activeTab === 'areas' && (
+              <>
+                {/* Scope filter */}
+                <select
+                  className="um-filter-select"
+                  value={filterScope}
+                  onChange={(e) => setFilterScope(e.target.value)}
+                >
+                  <option value="">All Scopes</option>
+                  <option value="SITE">Site Level</option>
+                  <option value="BUILDING">Building Level</option>
+                </select>
 
-            {/* Building filter */}
-            <FilterSelect
-              value={filterBuilding}
-              onChange={(e) => setFilterBuilding(e.target.value)}
-            >
-              <option value="">All Buildings</option>
-              {buildings.map(b => (
-                <option key={b.id} value={String(b.id)}>{b.name}</option>
-              ))}
-            </FilterSelect>
+                {/* Building filter */}
+                <select
+                  className="um-filter-select"
+                  value={filterBuilding}
+                  onChange={(e) => setFilterBuilding(e.target.value)}
+                >
+                  <option value="">All Buildings</option>
+                  {buildings.map(b => (
+                    <option key={b.id} value={String(b.id)}>{b.name}</option>
+                  ))}
+                </select>
 
-            {/* System filter */}
-            <FilterSelect
-              value={filterSystem}
-              onChange={(e) => setFilterSystem(e.target.value)}
-            >
-              <option value="">All Systems</option>
-              {Object.keys(systemDetails).map(sys => (
-                <option key={sys} value={sys}>
-                  {systemDetails[sys].label}
-                </option>
-              ))}
-            </FilterSelect>
+                {/* System filter */}
+                <select
+                  className="um-filter-select"
+                  value={filterSystem}
+                  onChange={(e) => setFilterSystem(e.target.value)}
+                >
+                  <option value="">All Systems</option>
+                  {Object.keys(systemDetails).map(sys => (
+                    <option key={sys} value={sys}>
+                      {systemDetails[sys].label}
+                    </option>
+                  ))}
+                </select>
+              </>
+            )}
           </div>
 
           <div className="d-flex align-items-center gap-2">
@@ -398,22 +582,22 @@ const AreaManagement = () => {
               </span>
             )}
             <span className="um-count-badge">
-              {filteredAreas.length} Areas
+              {activeTab === 'areas' ? `${filteredAreas.length} Areas` : `${filteredBuildings.length} Buildings`}
             </span>
-            <button className="um-btn-primary" onClick={openCreateModal}>
+            <button className="um-btn-primary" onClick={activeTab === 'areas' ? openCreateModal : openCreateBuildingModal}>
               <Plus size={15} className="me-2" />
-              Add Area
+              {activeTab === 'areas' ? 'Add Area' : 'Add Building'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Areas Table ── */}
+      {/* ── Table Container ── */}
       <Card className="um-card">
         {loading ? (
           <div className="um-empty-state">
             <div className="um-spinner mb-3" />
-            <span className="text-secondary">Loading areas data...</span>
+            <span className="text-secondary">{activeTab === 'areas' ? 'Loading areas data...' : 'Loading buildings data...'}</span>
           </div>
         ) : apiError ? (
           <div className="um-empty-state">
@@ -423,155 +607,283 @@ const AreaManagement = () => {
             <h5 className="text-danger fw-bold mb-2">Connection Error</h5>
             <p className="text-secondary max-w-md">{apiError}</p>
           </div>
-        ) : filteredAreas.length === 0 ? (
-          <div className="um-empty-state">
-            <div className="um-empty-icon mb-3">
-              <MapPin size={24} />
+        ) : activeTab === 'areas' ? (
+          filteredAreas.length === 0 ? (
+            <div className="um-empty-state">
+              <div className="um-empty-icon mb-3">
+                <MapPin size={24} />
+              </div>
+              <h5 className="text-light fw-bold mb-1">No Areas Defined</h5>
+              <p className="text-secondary max-w-sm">No functional areas have been added yet or fit filters.</p>
             </div>
-            <h5 className="text-light fw-bold mb-1">No Areas Defined</h5>
-            <p className="text-secondary max-w-sm">No functional areas have been added yet or fit filters.</p>
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table className="um-table w-100">
-              <thead>
-                <tr>
-                  <th>Area Name</th>
-                  <th>Scope</th>
-                  <th>Building</th>
-                  <th>System Category</th>
-                  <th>Floor</th>
-                  <th>Display Order</th>
-                  <th>Status</th>
-                  <th className="text-end">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAreas.map((a) => {
-                  const isSite = a.scope === 'SITE';
-                  const sysBadge = getSystemBadge(a.functionalSystem);
-                  const areaBuilding = buildings.find(b => b.id === a.buildingId);
+          ) : (
+            <div className="table-responsive">
+              <table className="um-table w-100">
+                <thead>
+                  <tr>
+                    <th>Area Name</th>
+                    <th>Scope</th>
+                    <th>Building</th>
+                    <th>System Category</th>
+                    <th>Floor</th>
+                    <th>Display Order</th>
+                    <th>Status</th>
+                    <th className="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredAreas.map((a) => {
+                    const isSite = a.scope === 'SITE';
+                    const sysBadge = getSystemBadge(a.functionalSystem);
+                    const areaBuilding = buildings.find(b => b.id === a.buildingId);
 
-                  return (
-                    <tr key={a.id} className="um-tr">
-                      {/* Name */}
-                      <td>
-                        <div className="d-flex align-items-center gap-3">
-                          <div
-                            className="um-avatar"
+                    return (
+                      <tr key={a.id} className="um-tr">
+                        {/* Name */}
+                        <td>
+                          <div className="d-flex align-items-center gap-3">
+                            <div
+                              className="um-avatar"
+                              style={{
+                                background: isSite ? 'rgba(56,189,248,0.1)' : 'rgba(167,139,250,0.1)',
+                                color: isSite ? '#38bdf8' : '#a78bfa',
+                                border: `1.5px solid ${isSite ? '#38bdf8' : '#a78bfa'}25`
+                              }}
+                            >
+                              {isSite ? <MapPin size={16} /> : <Building2 size={16} />}
+                            </div>
+                            <div>
+                              <div className="um-user-name">{a.name}</div>
+                              {a.description && <div className="um-email">{a.description}</div>}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Scope */}
+                        <td>
+                          <span
+                            className="um-role-badge"
                             style={{
-                              background: isSite ? 'rgba(56,189,248,0.1)' : 'rgba(167,139,250,0.1)',
+                              background: isSite ? 'rgba(56,189,248,0.06)' : 'rgba(167,139,250,0.06)',
                               color: isSite ? '#38bdf8' : '#a78bfa',
-                              border: `1.5px solid ${isSite ? '#38bdf8' : '#a78bfa'}25`
+                              border: `1px solid ${isSite ? '#38bdf8' : '#a78bfa'}25`
                             }}
                           >
-                            {isSite ? <MapPin size={16} /> : <Building2 size={16} />}
-                          </div>
-                          <div>
-                            <div className="um-user-name">{a.name}</div>
-                            {a.description && <div className="um-email">{a.description}</div>}
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Scope */}
-                      <td>
-                        <span
-                          className="um-role-badge"
-                          style={{
-                            background: isSite ? 'rgba(56,189,248,0.06)' : 'rgba(167,139,250,0.06)',
-                            color: isSite ? '#38bdf8' : '#a78bfa',
-                            border: `1px solid ${isSite ? '#38bdf8' : '#a78bfa'}25`
-                          }}
-                        >
-                          {a.scope}
-                        </span>
-                      </td>
-
-                      {/* Building */}
-                      <td className="text-light-50 fw-semibold" style={{ fontSize: '0.82rem' }}>
-                        {areaBuilding?.name || <span className="text-secondary font-monospace">GLOBAL SITE</span>}
-                      </td>
-
-                      {/* Functional System */}
-                      <td>
-                        <span
-                          className="um-role-badge"
-                          style={{
-                            background: `${sysBadge.color}15`,
-                            color: sysBadge.color,
-                            border: `1px solid ${sysBadge.color}35`
-                          }}
-                        >
-                          {sysBadge.label}
-                        </span>
-                      </td>
-
-                      {/* Floor */}
-                      <td className="text-light" style={{ fontSize: '0.82rem' }}>
-                        {a.floorNumber !== null ? `Floor ${a.floorNumber}` : '—'}
-                      </td>
-
-                      {/* Display Order */}
-                      <td className="text-light font-monospace" style={{ fontSize: '0.82rem' }}>
-                        {a.displayOrder}
-                      </td>
-
-                      {/* Status */}
-                      <td>
-                        <div
-                          className="d-flex align-items-center gap-2"
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => handleToggleStatus(a.id, a.name, a.isActive)}
-                        >
-                          <div style={{
-                            width: '38px', height: '20px', borderRadius: '10px',
-                            background: a.isActive ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)',
-                            border: `1.5px solid ${a.isActive ? 'rgba(56,189,248,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                            position: 'relative', transition: 'all 0.2s',
-                          }}>
-                            <div style={{
-                              width: '14px', height: '14px', borderRadius: '50%',
-                              background: a.isActive ? '#38bdf8' : '#475569',
-                              position: 'absolute', top: '1.5px',
-                              left: a.isActive ? '20px' : '2px',
-                              transition: 'all 0.2s',
-                              boxShadow: a.isActive ? '0 0 6px rgba(56,189,248,0.7)' : 'none',
-                            }} />
-                          </div>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: a.isActive ? '#38bdf8' : '#64748b' }}>
-                            {a.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            {a.scope}
                           </span>
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="text-end">
-                        <div className="d-inline-flex gap-2">
-                          <button
-                            type="button"
-                            className="um-action-btn settings"
-                            title="Edit Area Details"
-                            onClick={() => openEditModal(a)}
+                        {/* Building */}
+                        <td className="text-light-50 fw-semibold" style={{ fontSize: '0.82rem' }}>
+                          {areaBuilding?.name || <span className="text-secondary font-monospace">GLOBAL SITE</span>}
+                        </td>
+
+                        {/* Functional System */}
+                        <td>
+                          <span
+                            className="um-role-badge"
+                            style={{
+                              background: `${sysBadge.color}15`,
+                              color: sysBadge.color,
+                              border: `1px solid ${sysBadge.color}35`
+                            }}
                           >
-                            <Sliders size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className="um-action-btn delete"
-                            title="Delete Area"
-                            onClick={() => handleDeleteArea(a.id, a.name)}
+                            {sysBadge.label}
+                          </span>
+                        </td>
+
+                        {/* Floor */}
+                        <td className="text-light" style={{ fontSize: '0.82rem' }}>
+                          {a.floorNumber !== null ? `Floor ${a.floorNumber}` : '—'}
+                        </td>
+
+                        {/* Display Order */}
+                        <td className="text-light font-monospace" style={{ fontSize: '0.82rem' }}>
+                          {a.displayOrder}
+                        </td>
+
+                        {/* Status */}
+                        <td>
+                          <div
+                            className="d-flex align-items-center gap-2"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleToggleStatus(a.id, a.name, a.isActive)}
                           >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            <div style={{
+                              width: '38px', height: '20px', borderRadius: '10px',
+                              background: a.isActive ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)',
+                              border: `1.5px solid ${a.isActive ? 'rgba(56,189,248,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                              position: 'relative', transition: 'all 0.2s',
+                            }}>
+                              <div style={{
+                                width: '14px', height: '14px', borderRadius: '50%',
+                                background: a.isActive ? '#38bdf8' : '#475569',
+                                position: 'absolute', top: '1.5px',
+                                left: a.isActive ? '20px' : '2px',
+                                transition: 'all 0.2s',
+                                boxShadow: a.isActive ? '0 0 6px rgba(56,189,248,0.7)' : 'none',
+                              }} />
+                            </div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: a.isActive ? '#38bdf8' : '#64748b' }}>
+                              {a.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="text-end">
+                          <div className="d-inline-flex gap-2">
+                            <button
+                              type="button"
+                              className="um-action-btn settings"
+                              title="Edit Area Details"
+                              onClick={() => openEditModal(a)}
+                            >
+                              <Sliders size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="um-action-btn delete"
+                              title="Delete Area"
+                              onClick={() => handleDeleteArea(a.id, a.name)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : (
+          filteredBuildings.length === 0 ? (
+            <div className="um-empty-state">
+              <div className="um-empty-icon mb-3">
+                <Building2 size={24} />
+              </div>
+              <h5 className="text-light fw-bold mb-1">No Buildings Defined</h5>
+              <p className="text-secondary max-w-sm">No buildings have been registered yet or fit filters.</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="um-table w-100">
+                <thead>
+                  <tr>
+                    <th>Building Name</th>
+                    <th>Code</th>
+                    <th>Total Floors</th>
+                    <th>Display Order</th>
+                    <th>Status</th>
+                    <th className="text-end">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredBuildings.map((b) => {
+                    return (
+                      <tr key={b.id} className="um-tr">
+                        {/* Name */}
+                        <td>
+                          <div className="d-flex align-items-center gap-3">
+                            <div
+                              className="um-avatar"
+                              style={{
+                                background: 'rgba(167,139,250,0.1)',
+                                color: '#a78bfa',
+                                border: '1.5px solid rgba(167,139,250,0.25)'
+                              }}
+                            >
+                              <Building2 size={16} />
+                            </div>
+                            <div>
+                              <div className="um-user-name">{b.name}</div>
+                              {b.description && <div className="um-email">{b.description}</div>}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Code */}
+                        <td>
+                          <span
+                            className="um-role-badge"
+                            style={{
+                              background: 'rgba(56,189,248,0.06)',
+                              color: '#38bdf8',
+                              border: '1px solid rgba(56,189,248,0.25)'
+                            }}
+                          >
+                            {b.code || '—'}
+                          </span>
+                        </td>
+
+                        {/* Total Floors */}
+                        <td className="text-light" style={{ fontSize: '0.82rem' }}>
+                          {b.totalFloors !== null ? `${b.totalFloors} Floors` : '—'}
+                        </td>
+
+                        {/* Display Order */}
+                        <td className="text-light font-monospace" style={{ fontSize: '0.82rem' }}>
+                          {b.displayOrder}
+                        </td>
+
+                        {/* Status */}
+                        <td>
+                          <div
+                            className="d-flex align-items-center gap-2"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleToggleBuildingStatus(b.id, b.name, b.isActive)}
+                          >
+                            <div style={{
+                              width: '38px', height: '20px', borderRadius: '10px',
+                              background: b.isActive ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)',
+                              border: `1.5px solid ${b.isActive ? 'rgba(56,189,248,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                              position: 'relative', transition: 'all 0.2s',
+                            }}>
+                              <div style={{
+                                width: '14px', height: '14px', borderRadius: '50%',
+                                background: b.isActive ? '#38bdf8' : '#475569',
+                                position: 'absolute', top: '1.5px',
+                                left: b.isActive ? '20px' : '2px',
+                                transition: 'all 0.2s',
+                                boxShadow: b.isActive ? '0 0 6px rgba(56,189,248,0.7)' : 'none',
+                              }} />
+                            </div>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: b.isActive ? '#38bdf8' : '#64748b' }}>
+                              {b.isActive ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="text-end">
+                          <div className="d-inline-flex gap-2">
+                            <button
+                              type="button"
+                              className="um-action-btn settings"
+                              title="Edit Building Details"
+                              onClick={() => openEditBuildingModal(b)}
+                            >
+                              <Sliders size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              className="um-action-btn delete"
+                              title="Delete Building"
+                              onClick={() => handleDeleteBuilding(b.id, b.name)}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
       </Card>
 
@@ -750,9 +1062,178 @@ const AreaManagement = () => {
         </Form>
       </Modal>
 
+      {/* ── Add / Edit Building Modal ── */}
+      <Modal show={showBuildingModal} onHide={() => setShowBuildingModal(false)} className="um-modal" size="lg" centered>
+        <Modal.Header closeButton className="border-0 pb-0">
+          <Modal.Title style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.01em' }}>
+            {buildingFormData.id ? 'Building Configuration Details' : 'Register New Building'}
+          </Modal.Title>
+        </Modal.Header>
+
+        <Form onSubmit={handleSubmitBuilding}>
+          <Modal.Body style={{ padding: '1.5rem 1.5rem 1rem' }}>
+            <Row className="g-3">
+              {/* Building Name */}
+              <Col md={6}>
+                <Form.Label className="um-form-label">Building Name <span className="text-danger">*</span></Form.Label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Block A, Lot-2 Building"
+                  className="um-form-input"
+                  value={buildingFormData.name}
+                  onChange={(e) => setBuildingFormData({ ...buildingFormData, name: e.target.value })}
+                />
+              </Col>
+
+              {/* Building Code */}
+              <Col md={6}>
+                <Form.Label className="um-form-label">Building Code (Optional)</Form.Label>
+                <input
+                  type="text"
+                  placeholder="e.g. BLK-A"
+                  className="um-form-input"
+                  value={buildingFormData.code}
+                  onChange={(e) => setBuildingFormData({ ...buildingFormData, code: e.target.value })}
+                />
+              </Col>
+
+              {/* Total Floors */}
+              <Col md={4}>
+                <Form.Label className="um-form-label">Total Floors (Optional)</Form.Label>
+                <input
+                  type="number"
+                  placeholder="e.g. 5"
+                  className="um-form-input"
+                  min="1"
+                  value={buildingFormData.totalFloors}
+                  onChange={(e) => setBuildingFormData({ ...buildingFormData, totalFloors: e.target.value })}
+                />
+              </Col>
+
+              {/* Display Order */}
+              <Col md={4}>
+                <Form.Label className="um-form-label">Display Order</Form.Label>
+                <input
+                  type="number"
+                  placeholder="e.g. 0"
+                  className="um-form-input"
+                  min="0"
+                  value={buildingFormData.displayOrder}
+                  onChange={(e) => setBuildingFormData({ ...buildingFormData, displayOrder: e.target.value })}
+                />
+              </Col>
+
+              {/* Active Toggle */}
+              <Col md={4} className="d-flex align-items-end" style={{ paddingBottom: '0.62rem' }}>
+                <div
+                  className="d-flex align-items-center gap-3"
+                  style={{ cursor: 'pointer', userSelect: 'none' }}
+                  onClick={() => setBuildingFormData({ ...buildingFormData, isActive: !buildingFormData.isActive })}
+                >
+                  <div style={{
+                    width: '38px', height: '20px', borderRadius: '10px',
+                    background: buildingFormData.isActive ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)',
+                    border: `1.5px solid ${buildingFormData.isActive ? 'rgba(56,189,248,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                    position: 'relative', transition: 'all 0.2s',
+                  }}>
+                    <div style={{
+                      width: '14px', height: '14px', borderRadius: '50%',
+                      background: buildingFormData.isActive ? '#38bdf8' : '#475569',
+                      position: 'absolute', top: '1.5px',
+                      left: buildingFormData.isActive ? '20px' : '2px',
+                      transition: 'all 0.2s',
+                      boxShadow: buildingFormData.isActive ? '0 0 6px rgba(56,189,248,0.7)' : 'none',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: buildingFormData.isActive ? '#38bdf8' : '#64748b' }}>
+                    STATUS: {buildingFormData.isActive ? 'ACTIVE' : 'INACTIVE'}
+                  </span>
+                </div>
+              </Col>
+
+              {/* Description */}
+              <Col md={12}>
+                <Form.Label className="um-form-label">Description / Notes</Form.Label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Primary office building..."
+                  className="um-form-input"
+                  style={{ resize: 'none' }}
+                  value={buildingFormData.description}
+                  onChange={(e) => setBuildingFormData({ ...buildingFormData, description: e.target.value })}
+                />
+              </Col>
+            </Row>
+          </Modal.Body>
+
+          <Modal.Footer className="border-0 pt-0" style={{ padding: '0.75rem 1.5rem 1.25rem', flexDirection: 'column', alignItems: 'stretch', gap: '0.65rem' }}>
+            {saveBuildingError && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1rem',
+                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                borderRadius: '10px', color: '#f87171', fontSize: '0.82rem', fontWeight: 600
+              }}>
+                <X size={15} style={{ flexShrink: 0 }} /> {saveBuildingError}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button type="button" className="um-btn-secondary" onClick={() => { setShowBuildingModal(false); setSaveBuildingError(null); }}>
+                Cancel
+              </button>
+              <button type="submit" className="um-btn-primary" disabled={savingBuilding} style={{ minWidth: '160px', justifyContent: 'center' }}>
+                {savingBuilding ? (
+                  <>
+                    <span style={{
+                      display: 'inline-block', width: '14px', height: '14px',
+                      border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff',
+                      borderRadius: '50%', animation: 'umSpin 0.7s linear infinite', marginRight: '8px'
+                    }} />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save size={15} className="me-2" />
+                    {buildingFormData.id ? 'Save Changes' : 'Register Building'}
+                  </>
+                )}
+              </button>
+            </div>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+
       {/* ── styles ── */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes umSpin { to { transform: rotate(360deg); } }
+
+        /* ── tab toggle switcher ── */
+        .um-tab-toggle-group {
+          display: inline-flex;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 28px;
+          padding: 4px;
+        }
+        .um-tab-toggle-btn {
+          background: transparent;
+          border: none;
+          color: #64748b;
+          font-size: 1.05rem;
+          font-weight: 700;
+          padding: 0.55rem 1.4rem;
+          border-radius: 24px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .um-tab-toggle-btn:hover {
+          color: #e2e8f0;
+        }
+        .um-tab-toggle-btn.active {
+          background: linear-gradient(135deg, #0ea5e9, #2563eb);
+          color: #ffffff;
+          box-shadow: 0 4px 12px rgba(14, 165, 233, 0.25);
+        }
 
         /* ── toolbar filters ── */
         .um-filter-select {
