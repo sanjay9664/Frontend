@@ -97,7 +97,7 @@ const Dashboard = () => {
               {time.toLocaleDateString()} | {time.toLocaleTimeString()}
             </div>
           </div>
-          <h1 className="text-white fw-black tracking-tight mb-2 size-2">SOCHIOT <span className="text-gradient"></span></h1>
+          <h1 className="text-white fw-black tracking-tight mb-2 size-2">TRUEiSENSE <span className="text-gradient"></span></h1>
           <div className="d-flex align-items-center gap-3 opacity-75">
             <small className="text-muted fs-11 uppercase f-tracking-widest fw-black">ID: SCH-9981-TXR</small>
             <div className="v-divider"></div>

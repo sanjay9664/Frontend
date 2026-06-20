@@ -3130,14 +3130,14 @@ const ConfigTemplates = () => {
                     <Activity size={14} className="text-info animate-pulse" />
                   </div>
                   <div>
-                    <small className="text-info d-block fw-black uppercase tracking-widest opacity-80 mb-0" style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>Step 3: Sochiot Status Checks (Auto-filled / Fully Editable)</small>
-                    <span className="text-secondary opacity-60" style={{ fontSize: '0.72rem' }}>Specify the Sochiot Device UUID and Gateway Cluster ID to track real-time online/offline status.</span>
+                    <small className="text-info d-block fw-black uppercase tracking-widest opacity-80 mb-0" style={{ fontSize: '0.65rem', letterSpacing: '0.05em' }}>Step 3: TRUEiSENSE Status Checks (Auto-filled / Fully Editable)</small>
+                    <span className="text-secondary opacity-60" style={{ fontSize: '0.72rem' }}>Specify the TRUEiSENSE Device UUID and Gateway Cluster ID to track real-time online/offline status.</span>
                   </div>
                 </div>
                 <Row className="g-3">
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label className="fs-10 fw-black uppercase tracking-widest opacity-80 text-info" style={{ letterSpacing: '0.05em' }}>Device UUID (Sochiot Device ID)</Form.Label>
+                      <Form.Label className="fs-10 fw-black uppercase tracking-widest opacity-80 text-info" style={{ letterSpacing: '0.05em' }}>Device UUID (TRUEiSENSE Device ID)</Form.Label>
                       <Form.Control
                         type="text"
                         placeholder="Enter or select device to auto-fill"

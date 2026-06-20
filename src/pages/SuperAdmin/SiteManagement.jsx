@@ -1192,7 +1192,7 @@ const SiteManagement = () => {
                       value={form.name} onChange={e=>setF('name',e.target.value)} required/>
                   </div>
                   <div className="sm2-fg">
-                    <label className="sm2-lbl">Sochiot Location ID</label>
+                    <label className="sm2-lbl">TRUEiSENSE Location ID</label>
                     <input className="sm2-inp" placeholder="Auto-filled from location" value={form.sochiotLocationId} onChange={e=>setF('sochiotLocationId',e.target.value)}/>
                   </div>
                   <div className="sm2-fg">

@@ -6,14 +6,26 @@ import Login from './pages/Login';
 import { DeviceStatusProvider } from './services/DeviceStatusContext';
 import { ThemeProvider } from './context/ThemeContext';
 import SplashScreen from './components/SplashScreen';
+import brandLogo from './assets/trueisense.jpeg';
+import loginLogo from './assets/logo.png';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     localStorage.getItem('isAuthenticated') === 'true'
   );
 
+  // Preload critical branding assets for instant rendering and cache hits
+  useEffect(() => {
+    const img1 = new Image();
+    img1.src = brandLogo;
+    const img2 = new Image();
+    img2.src = loginLogo;
+  }, []);
+
   // Track if splash should show (runs on fresh load/reload and login)
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(
+    localStorage.getItem('isAuthenticated') !== 'true'
+  );
   const prevAuthRef = useRef(isAuthenticated);
 
   // Auto-login from URL parameters (useful for iframe embedding)
@@ -117,4 +129,3 @@ function App() {
 }
 
 export default App;
-

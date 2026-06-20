@@ -83,6 +83,7 @@ const Login = ({ onLoginSuccess }) => {
           (meData.roles && meData.roles.includes('SUPER_ADMIN')) ||
           (meData.authorities && (meData.authorities.includes('PERM_SUPER_ADMIN') || meData.authorities.includes('PERM_MANAGE_ALL'))) ||
           emailLower === 'superadmin@sochiot.com' ||
+          emailLower === 'superadmin@trueisense.com' ||
           emailLower === 'sa@ismartaccess.com' ||
           emailLower.startsWith('superadmin@')
         );
@@ -169,7 +170,7 @@ const Login = ({ onLoginSuccess }) => {
         <div className="position-relative z-10 w-100">
           <div className="d-flex align-items-center gap-3 mb-5">
              <div className="bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-10 backdrop-blur">
-                <img src={logo} alt="Sochiot" style={{ height: 40 }} />
+                <img src={logo} alt="TRUEiSENSE" style={{ height: 40 }} />
              </div>
              <div className="h-line-scada flex-grow-1 opacity-25"></div>
           </div>
@@ -198,7 +199,7 @@ const Login = ({ onLoginSuccess }) => {
                 ))}
             </div>
             <div className="text-white text-opacity-25 fs-13 fw-bold tracking-widest uppercase">
-                © 2026 SOCHIOT AUTOMATION PVT. LTD. ALL NODES ENCRYPTED.
+                © 2026 TRUEiSENSE AUTOMATION PVT. LTD. ALL NODES ENCRYPTED.
             </div>
         </div>
       </div>
@@ -207,7 +208,7 @@ const Login = ({ onLoginSuccess }) => {
       <div className="login-form-side flex-grow-1 d-flex align-items-center justify-content-center p-4">
           <div className="login-form-container w-100" style={{ maxWidth: '440px' }}>
             <div className="text-center mb-5">
-                 <img src={logo} alt="Sochiot" className="mb-4" style={{ height: 60 }} />
+                 <img src={logo} alt="TRUEiSENSE" className="mb-4" style={{ height: 60 }} />
             </div>
 
             {error && (
@@ -222,7 +223,7 @@ const Login = ({ onLoginSuccess }) => {
                     <div className="input-icon-v3"><Mail size={18} /></div>
                     <Form.Control 
                         type="email" 
-                        placeholder={loginMode === 'admin' ? "admin@sochiot.com" : "user@sochiot.com"}
+                        placeholder={loginMode === 'admin' ? "admin@trueisense.com" : "user@trueisense.com"}
                         className={`scada-input-v3 ${loginMode === 'user' ? 'border-user-v3' : ''}`}
                         value={credentials.username}
                         onChange={(e) => setCredentials({...credentials, username: e.target.value})}
@@ -277,8 +278,8 @@ const Login = ({ onLoginSuccess }) => {
         /* HERO SIDE */
         .login-hero-side {
           width: 55%;
-          background-color: #020617;
-          border-right: 1px solid rgba(255, 255, 255, 0.05);
+          background-color: #120A05;
+          border-right: 1px solid rgba(224, 94, 0, 0.1);
         }
         .hero-bg-img {
           position: absolute;
@@ -286,95 +287,110 @@ const Login = ({ onLoginSuccess }) => {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          opacity: 0.8;
-          mix-blend-mode: normal;
+          opacity: 0.55;
+          mix-blend-mode: luminosity;
         }
         .hero-grid-overlay {
           position: absolute;
           inset: 0;
-          background-image: linear-gradient(rgba(14, 165, 233, 0.1) 1.5px, transparent 1.5px), 
-                            linear-gradient(90deg, rgba(14, 165, 233, 0.1) 1.5px, transparent 1.5px);
+          background-image: linear-gradient(rgba(224, 94, 0, 0.08) 1.5px, transparent 1.5px), 
+                            linear-gradient(90deg, rgba(224, 94, 0, 0.08) 1.5px, transparent 1.5px);
           background-size: 60px 60px;
-          opacity: 0.3;
+          opacity: 0.25;
           z-index: 2;
         }
         .backdrop-blur { backdrop-filter: blur(10px); }
         .h-line-scada { height: 1px; background: white; }
-        .h-line-scada-short { width: 60px; height: 3px; background: #0ea5e9; border-radius: 2px; }
-        .text-info-scada { color: #0ea5e9; }
+        .h-line-scada-short { width: 60px; height: 3px; background: #e05e00; border-radius: 2px; }
+        .text-info-scada { color: #e05e00; }
         .max-w-sm { max-width: 450px; }
 
         /* FORM SIDE */
         .login-form-side {
-          background-color: #05070a;
+          background: linear-gradient(180deg, #8C3B06 0%, #2A1206 40%, #120A05 70%, #000000 100%) !important;
           position: relative;
+        }
+        .login-form-side::before {
+          content: '';
+          position: absolute;
+          width: 600px;
+          height: 600px;
+          background: radial-gradient(circle, rgba(224, 94, 0, 0.1) 0%, transparent 70%);
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 1;
         }
         .z-10 { z-index: 10; }
 
-        /* ROLE TOGGLE */
-        .role-selector-container { height: 52px; background-color: #0f172a; }
-        .role-slider {
-          position: absolute;
-          top: 3px;
-          left: 3px;
-          width: calc(50% - 3px);
-          height: calc(100% - 6px);
-          background: linear-gradient(135deg, #0ea5e9, #2563eb);
-          border-radius: 50px;
-          transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-          z-index: 1;
-        }
-        .slide-right {
-          transform: translateX(100%);
-          background: linear-gradient(135deg, #059669, #10b981) !important;
-        }
-        .role-btn {
-          border: 0;
-          background: transparent;
-          color: rgba(255, 255, 255, 0.6);
-          font-weight: 900;
-          font-size: 0.72rem;
-          letter-spacing: 2px;
+        /* GLASSMORPHIC CONTAINER */
+        .login-form-container {
+          position: relative;
           z-index: 2;
-          transition: 0.3s ease;
+          background: linear-gradient(135deg, rgba(28, 16, 8, 0.35) 0%, rgba(10, 5, 2, 0.55) 100%) !important;
+          border: 1px solid rgba(224, 94, 0, 0.2) !important;
+          border-radius: 24px !important;
+          padding: 3rem 2.5rem !important;
+          box-shadow: 
+            0 30px 60px rgba(0, 0, 0, 0.8),
+            0 0 50px rgba(224, 94, 0, 0.12),
+            inset 0 1px 1px rgba(255, 255, 255, 0.06) !important;
+          backdrop-filter: blur(20px) !important;
+          -webkit-backdrop-filter: blur(20px) !important;
+          transition: all 0.4s ease;
         }
-        .role-btn.active { color: white; }
+        .login-form-container:hover {
+          border-color: rgba(224, 94, 0, 0.3) !important;
+          box-shadow: 
+            0 30px 70px rgba(0, 0, 0, 0.9),
+            0 0 60px rgba(224, 94, 0, 0.18),
+            inset 0 1px 1px rgba(255, 255, 255, 0.08) !important;
+        }
 
         /* INPUTS V3 */
         .scada-input-v3 {
-          background: rgba(255, 255, 255, 0.03) !important;
-          border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          background: rgba(0, 0, 0, 0.4) !important;
+          border: 1px solid rgba(224, 94, 0, 0.18) !important;
           border-radius: 12px !important;
           padding: 16px 16px 16px 52px !important;
           color: white !important;
           font-weight: 600 !important;
           font-size: 1rem !important;
-          transition: 0.3s !important;
+          transition: all 0.3s ease !important;
         }
-        .scada-input-v3:focus { border-color: #0ea5e9 !important; background: rgba(14, 165, 233, 0.05) !important; outline: none; box-shadow: 0 0 15px rgba(14, 165, 233, 0.1); }
-        .border-user-v3:focus { border-color: #10b981 !important; background: rgba(16, 185, 129, 0.05) !important; }
-        .scada-input-v3::placeholder { color: rgba(255, 255, 255, 0.4) !important; font-weight: 500; }
+        .scada-input-v3:focus {
+          border-color: #e05e00 !important;
+          background: rgba(224, 94, 0, 0.05) !important;
+          outline: none !important;
+          box-shadow: 0 0 18px rgba(224, 94, 0, 0.2) !important;
+        }
+        .scada-input-v3::placeholder {
+          color: rgba(255, 255, 255, 0.3) !important;
+          font-weight: 500;
+        }
         .input-icon-v3 {
           position: absolute;
           left: 18px;
           top: 50%;
           transform: translateY(-50%);
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(224, 94, 0, 0.6);
           z-index: 10;
         }
 
         /* BUTTONS V3 */
-        .login-btn-admin-v3 {
-          background: #0ea5e9;
-          color: #020617;
-          box-shadow: 0 10px 25px rgba(14, 165, 233, 0.2);
+        .login-btn-admin-v3, .login-btn-user-v3 {
+          background: linear-gradient(135deg, #e05e00, #8C3B06) !important;
+          color: white !important;
+          border-radius: 12px !important;
+          box-shadow: 0 8px 25px rgba(224, 94, 0, 0.22) !important;
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
         }
-        .login-btn-user-v3 {
-          background: #10b981;
-          color: #020617;
-          box-shadow: 0 10px 25px rgba(16, 185, 129, 0.2);
+        .login-btn-admin-v3:hover, .login-btn-user-v3:hover {
+          transform: translateY(-2px) scale(1.02);
+          box-shadow: 0 12px 30px rgba(224, 94, 0, 0.35) !important;
+          filter: brightness(1.1);
         }
-        .login-btn-admin-v3:hover, .login-btn-user-v3:hover { transform: translateY(-2px); filter: brightness(1.15); }
 
         .fw-black { font-weight: 950 !important; }
         .fs-13 { font-size: 0.65rem !important; }
@@ -382,7 +398,7 @@ const Login = ({ onLoginSuccess }) => {
         .tracking-widest { letter-spacing: 4px !important; }
         .uppercase { text-transform: uppercase !important; }
         .fade-in { animation: fadeIn 0.8s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
       `}} />
     </div>
   );

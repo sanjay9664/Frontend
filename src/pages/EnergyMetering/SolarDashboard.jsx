@@ -476,7 +476,7 @@ const SolarDashboard = ({ mainMeters = [], subMeters = [] }) => {
                          {/* COL 2: INVERTER */}
                          <div style={{ position: 'absolute', left: '380px', top: '100px', background: currentTheme.cardBg, border: `1px solid ${currentTheme.border}`, borderRadius: '16px', padding: '24px 20px', width: '260px', height: '280px', zIndex: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: currentTheme.shadow }}>
                             <div className="w-100 d-flex justify-content-center position-relative mb-2">
-                               <span className={`fw-bold text-${isDark ? 'white' : 'dark'}`} style={{ fontSize: '16px', letterSpacing: '1px' }}>SOCHIOT</span>
+                               <span className={`fw-bold text-${isDark ? 'white' : 'dark'}`} style={{ fontSize: '16px', letterSpacing: '1px' }}>TRUEiSENSE</span>
                                <div style={{ position: 'absolute', right: 0, top: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></div>
                                   <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></div>

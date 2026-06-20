@@ -174,7 +174,7 @@ const MiniMFMMeter = ({ meter, isMapped = true, isOnline, onClick }) => {
         <div className="mfm-metallic-bezel" style={{ padding: '12px 10px', borderRadius: '12px' }}>
           {/* Brand Header */}
           <div className="mfm-brand-header d-flex justify-content-between align-items-center mb-2 px-1">
-            <span className="mfm-brand-logo" style={{ fontSize: '1.1rem', letterSpacing: '1px' }}>SOCHIOT</span>
+            <span className="mfm-brand-logo" style={{ fontSize: '1.1rem', letterSpacing: '1px' }}>TRUEiSENSE</span>
             <span className="mfm-model-no" style={{ fontSize: '0.6rem', padding: '1px 4px' }}>APM Series</span>
           </div>
 
@@ -231,7 +231,7 @@ const MiniMFMMeter = ({ meter, isMapped = true, isOnline, onClick }) => {
 
             <div className="mfm-spec-labels text-end" style={{ fontSize: '0.55rem' }}>
               <div className="text-white fw-bold">{meter.telemetryValues?.meterSrno || meter.id}</div>
-              <div>50.0Hz • SOCHIOT</div>
+              <div>50.0Hz • TRUEiSENSE</div>
             </div>
           </div>
 
