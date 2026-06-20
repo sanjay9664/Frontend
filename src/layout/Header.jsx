@@ -17,7 +17,7 @@ const Header = ({ collapsed, toggleSidebar }) => {
           <Menu size={24} />
         </Button>
         <h5 className="mb-0 fw-bold tracking-tight d-none d-md-block">
-           Sochiot Smart Monitoring System
+           TRUEiSENSE Smart Monitoring System
         </h5>
       </div>
 

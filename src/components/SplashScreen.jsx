@@ -1,34 +1,49 @@
 import React, { useEffect, useState } from 'react';
+import brandLogo from '../assets/trueisense.jpeg';
 
 /* ──────────────────────────────────────────────────────────────
    TRUEiSENSE Premium Splash Screen (Figma / Apple Grade UI)
-   Features:
-   - High-fidelity Glassmorphic container with glowing amber border
-   - Animated light sheen/gloss sweep across the logo
-   - Breathing/pulsing background lighting halos
-   - Cinematic text reveal with expanding letter-spacing
-   - High-performance native CSS keyframe animations
    ────────────────────────────────────────────────────────────── */
 const SplashScreen = ({ onComplete }) => {
   const [fadeOut, setFadeOut] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // Pre-load the brand image locally to ensure it is cached and ready in memory
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      setImageLoaded(true);
+    };
+    img.onerror = () => {
+      // Fallback immediately so splash screen does not hang if load fails
+      setImageLoaded(true);
+    };
+    img.src = brandLogo;
+
+    // Handle cached images immediately
+    if (img.complete) {
+      setImageLoaded(true);
+    }
+  }, []);
 
   useEffect(() => {
-    // Start screen fade-out at 2.6s
-    const tFadeOut = setTimeout(() => setFadeOut(true), 2600);
+    if (!imageLoaded) return;
 
-    // Complete transition at 3.3s
+    // Start screen fade-out at 1.4s
+    const tFadeOut = setTimeout(() => setFadeOut(true), 1400);
+
+    // Complete transition at 1.9s
     const tComplete = setTimeout(() => {
       if (onComplete) onComplete();
-    }, 3300);
+    }, 1900);
 
     return () => {
       clearTimeout(tFadeOut);
       clearTimeout(tComplete);
     };
-  }, [onComplete]);
+  }, [onComplete, imageLoaded]);
 
   // ── Inline Styles ──────────────────────────────────────────
-
   const overlayStyle = {
     position: 'fixed',
     inset: 0,
@@ -37,7 +52,7 @@ const SplashScreen = ({ onComplete }) => {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(180deg, #5C2201 0%, #1A0A02 40%, #0B0401 70%, #000000 100%)',
+    background: 'linear-gradient(180deg, #8C3B06 0%, #2A1206 40%, #120A05 70%, #000000 100%)',
     overflow: 'hidden',
     opacity: fadeOut ? 0 : 1,
     transition: 'opacity 0.75s cubic-bezier(0.25, 1, 0.5, 1)',
@@ -64,7 +79,7 @@ const SplashScreen = ({ onComplete }) => {
     width: 'min(700px, 95vw)',
     height: 'min(700px, 95vw)',
     borderRadius: '50%',
-    background: 'radial-gradient(circle, rgba(224, 94, 0, 0.11) 0%, rgba(224, 94, 0, 0.02) 50%, transparent 70%)',
+    background: 'radial-gradient(circle, rgba(224, 94, 0, 0.12) 0%, rgba(224, 94, 0, 0.03) 50%, transparent 70%)',
     pointerEvents: 'none',
     zIndex: 1,
     animation: 'breatheGlow 4s ease-in-out infinite',
@@ -78,28 +93,26 @@ const SplashScreen = ({ onComplete }) => {
     height: 'calc(clamp(280px, 45vw, 360px) * 1.45)',
     overflow: 'hidden',
     borderRadius: '32px',
-    // Glassmorphic background
     background: 'linear-gradient(135deg, rgba(28, 16, 8, 0.3) 0%, rgba(10, 5, 2, 0.5) 100%)',
-    // Soft amber border highlight
-    border: '1px solid rgba(224, 94, 0, 0.18)',
-    // Premium multi-layered shadow (outer glow + deep drop shadow + inner bezel highlight)
+    border: '1px solid rgba(224, 94, 0, 0.2)',
     boxShadow: `
       0 30px 70px rgba(0, 0, 0, 0.9),
       0 0 50px rgba(224, 94, 0, 0.14),
       inset 0 1px 1px rgba(255, 255, 255, 0.08)
     `,
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    animation: 'splashEntrance 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+    animation: 'splashEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
     userSelect: 'none',
   };
 
   const logoImgStyle = {
-    display: 'block',
+    position: 'absolute',
+    inset: 0,
     width: '100%',
-    height: 'auto',
-    mixBlendMode: 'lighten', // Blends black background of image with glass card
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center 42%',
     opacity: 0.95,
+    zIndex: 1,
   };
 
   // Cinematic Subtitle with wide letter spacing
@@ -114,9 +127,14 @@ const SplashScreen = ({ onComplete }) => {
     textAlign: 'center',
     pointerEvents: 'none',
     userSelect: 'none',
-    animation: 'splashTextReveal 1.2s cubic-bezier(0.25, 1, 0.5, 1) 0.7s forwards',
+    animation: 'splashTextReveal 0.8s cubic-bezier(0.25, 1, 0.5, 1) 0.3s forwards',
     opacity: 0,
   };
+
+  // Keep screen blank gradient while image is pre-loading to prevent unstyled layout flash
+  if (!imageLoaded) {
+    return <div style={overlayStyle} />;
+  }
 
   return (
     <div style={overlayStyle}>
@@ -149,7 +167,7 @@ const SplashScreen = ({ onComplete }) => {
             opacity: 0.7;
           }
           50% {
-            transform: translate(-50%, -50%) scale(1.12);
+            transform: translate(-50%, -50%) scale(1.1);
             opacity: 0.95;
           }
         }
@@ -180,15 +198,11 @@ const SplashScreen = ({ onComplete }) => {
           zIndex: 3,
         }} />
 
-        {/* Cropped Artwork */}
+        {/* Brand Image inside Card (Centered on Brand Elements) */}
         <img
-          src="/assets/trueisense.jpeg"
-          alt="TRUEiSENSE Logo"
+          src={brandLogo}
+          alt="TRUEiSENSE"
           style={logoImgStyle}
-          onError={(e) => {
-            console.warn('[Splash] Failed to load /assets/trueisense.jpeg, trying fallback');
-            e.target.src = '/trueisense.jpeg';
-          }}
         />
       </div>
 
