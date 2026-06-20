@@ -11,8 +11,8 @@
 
 .VRV-room-card:hover {
   transform: translateY(-5px);
-  border-color: rgba(56, 189, 248, 0.4) !important;
-  box-shadow: 0 12px 40px rgba(56, 189, 248, 0.15);
+  border-color: rgba(224, 94, 0, 0.4) !important;
+  box-shadow: 0 12px 40px rgba(224, 94, 0, 0.15);
 }
 
 .VRV-room-card.fault {
@@ -116,7 +116,7 @@
 }
 
 .status-dot.blue {
-  background-color: #38bdf8;
+  background-color: #e05e00;
 }
 
 .status-dot.red {
@@ -182,12 +182,12 @@
 
 .scada-select:focus {
   border-color: var(--scada-accent) !important;
-  box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25) !important;
+  box-shadow: 0 0 0 0.25rem rgba(224, 94, 0, 0.25) !important;
 }
 
 .sensor-box {
-  background: rgba(56, 189, 248, 0.05) !important;
-  border-color: rgba(56, 189, 248, 0.2) !important;
+  background: rgba(224, 94, 0, 0.05) !important;
+  border-color: rgba(224, 94, 0, 0.2) !important;
 }
 
 .quick-control {
