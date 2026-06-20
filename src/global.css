@@ -19,23 +19,30 @@
 
 body.light-mode {
   color-scheme: light;
-  --scada-bg: #d2d3db;
-  --scada-sidebar: #e2e8f0;
-  --scada-card: #f8fafc;
-  --scada-header: #d2d3db;
-  --scada-border: rgba(0, 0, 0, 0.08);
-  --scada-text: #1e293b;
-  --scada-text-muted: #475569;
-  --scada-accent: #0284c7;
+  --scada-bg: #f8fafc; /* Crisp premium off-white background */
+  --scada-sidebar: #ffffff; /* Pure white sidebar */
+  --scada-card: #ffffff; /* Pure white cards */
+  --scada-header: rgba(255, 255, 255, 0.85); /* Transparent glass header */
+  --scada-border: rgba(0, 0, 0, 0.06); /* Very subtle border */
+  --scada-text: #0f172a; /* Deep charcoal text */
+  --scada-text-muted: #64748b; /* Slate 500 gray */
+  --scada-accent: #e05e00; /* Signature TRUEiSENSE orange */
 
-  --status-running: #047857;
-  --status-fault: #b91c1c;
-  --status-warning: #b45309;
-  --status-stopped: #475569;
+  --status-running: #10b981; /* Premium green */
+  --status-fault: #ef4444; /* Clean rose red */
+  --status-warning: #f59e0b; /* Bright warning yellow */
+  --status-stopped: #64748b; /* Slate gray */
+  
+  background: var(--scada-bg) !important;
+  background-color: var(--scada-bg) !important;
+  background-image: none !important;
 }
 
 body.light-mode .scada-header {
-  background-color: rgba(210, 211, 219, 0.9);
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--scada-border) !important;
 }
 
 body.light-mode .scada-table thead th {
@@ -303,23 +310,30 @@ datalist, select:focus, .form-select:focus {
 
 body.light-mode {
   color-scheme: light;
-  --scada-bg: #d2d3db;
-  --scada-sidebar: #e2e8f0;
-  --scada-card: #f8fafc;
-  --scada-header: #d2d3db;
-  --scada-border: rgba(0, 0, 0, 0.08);
-  --scada-text: #1e293b;
-  --scada-text-muted: #475569;
-  --scada-accent: #0284c7;
+  --scada-bg: #f8fafc; /* Crisp premium off-white background */
+  --scada-sidebar: #ffffff; /* Pure white sidebar */
+  --scada-card: #ffffff; /* Pure white cards */
+  --scada-header: rgba(255, 255, 255, 0.85); /* Transparent glass header */
+  --scada-border: rgba(0, 0, 0, 0.06); /* Very subtle border */
+  --scada-text: #0f172a; /* Deep charcoal text */
+  --scada-text-muted: #64748b; /* Slate 500 gray */
+  --scada-accent: #e05e00; /* Signature TRUEiSENSE orange */
 
-  --status-running: #047857;
-  --status-fault: #b91c1c;
-  --status-warning: #b45309;
-  --status-stopped: #475569;
+  --status-running: #10b981; /* Premium green */
+  --status-fault: #ef4444; /* Clean rose red */
+  --status-warning: #f59e0b; /* Bright warning yellow */
+  --status-stopped: #64748b; /* Slate gray */
+  
+  background: var(--scada-bg) !important;
+  background-color: var(--scada-bg) !important;
+  background-image: none !important;
 }
 
 body.light-mode .scada-header {
-  background-color: rgba(210, 211, 219, 0.9);
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--scada-border) !important;
 }
 
 body.light-mode .scada-table thead th {
