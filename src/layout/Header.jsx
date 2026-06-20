@@ -80,6 +80,11 @@ const Header = ({ collapsed, toggleSidebar }) => {
               onClick={() => {
                 localStorage.removeItem('isAuthenticated');
                 localStorage.removeItem('userRole');
+                localStorage.removeItem('userData');
+                localStorage.removeItem('token');
+                localStorage.removeItem('sochiot_token');
+                localStorage.removeItem('scada_modules_config');
+                localStorage.removeItem('scada_submodules_config');
                 window.location.href = '/login';
               }}
             >

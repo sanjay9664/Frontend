@@ -125,6 +125,9 @@ export const DeviceStatusProvider = ({ children }) => {
 
   // Method to poll statuses for all devices/gateways found in savedTemplates
   const pollAllStatuses = useCallback(async () => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    if (!isAuthenticated) return;
+
     try {
       const saved = localStorage.getItem('scada_templates');
       if (!saved) return;
@@ -159,11 +162,27 @@ export const DeviceStatusProvider = ({ children }) => {
     }
   }, [checkDeviceStatus, checkGatewayStatus]);
 
-  // Set up periodic polling
+  // Set up periodic polling with authentication-awareness
   useEffect(() => {
-    pollAllStatuses();
-    const interval = setInterval(pollAllStatuses, 20000); // Poll every 20 seconds
-    return () => clearInterval(interval);
+    const handlePoll = () => {
+      const authenticated = localStorage.getItem('isAuthenticated') === 'true';
+      if (authenticated) {
+        pollAllStatuses();
+      }
+    };
+
+    handlePoll();
+
+    const interval = setInterval(handlePoll, 20000); // Poll every 20 seconds
+
+    window.addEventListener('storage-update', handlePoll);
+    window.addEventListener('storage', handlePoll);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('storage-update', handlePoll);
+      window.removeEventListener('storage', handlePoll);
+    };
   }, [pollAllStatuses]);
 
   // Helper function to resolve overall status
