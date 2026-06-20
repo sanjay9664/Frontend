@@ -33,10 +33,54 @@ const buildDefaultConfig = () => {
 };
 
 /* ─────────────────────── avatar helper ─────────────────── */
-const PALETTE = ['#38bdf8','#818cf8','#34d399','#fb923c','#f472b6','#a78bfa','#2dd4bf','#facc15'];
+const PALETTE = ['#fb923c','#f59e0b','#e05e00','#ef4444','#ec4899','#d946ef','#f43f5e','#ea580c'];
 const getAvatarBg = (name = '') => {
   const h = name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
   return PALETTE[h % PALETTE.length];
+};
+
+/* ─────────────────────── custom select component ─────────────────── */
+const CustomSelect = ({ value, onChange, options, placeholder = '— Select —', className = '', style = {} }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedOption = options.find(opt => String(opt.value) === String(value));
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClose = () => setIsOpen(false);
+    window.addEventListener('click', handleClose);
+    return () => window.removeEventListener('click', handleClose);
+  }, [isOpen]);
+
+  return (
+    <div className={`um-custom-select-container ${className}`} style={{ ...style }} onClick={e => e.stopPropagation()}>
+      <div 
+        className={`um-custom-select-trigger ${isOpen ? 'active' : ''}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span>{selectedOption ? selectedOption.label : placeholder}</span>
+        <span className="um-custom-select-arrow" style={{ transform: isOpen ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▼</span>
+      </div>
+      {isOpen && (
+        <div className="um-custom-select-dropdown">
+          {options.map(opt => {
+            const isSelected = String(opt.value) === String(value);
+            return (
+              <div 
+                key={opt.value} 
+                className={`um-custom-select-option ${isSelected ? 'selected' : ''}`}
+                onClick={() => {
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+              >
+                {opt.label}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 };
 
 /* ═══════════════════════ COMPONENT ════════════════════════ */
@@ -55,7 +99,7 @@ const UserManagement = () => {
 
   /* ── modal / form state ── */
   const [showModal,    setShowModal]    = useState(false);
-  const [formData,     setFormData]     = useState({ id:'', name:'', email:'', roleId:'', role:'' });
+  const [formData,     setFormData]     = useState({ id:'', name:'', email:'', roleId:'', role:'', siteId:'' });
   const [formConfig,   setFormConfig]   = useState(buildDefaultConfig());
   const [saving,       setSaving]       = useState(false);
   const [saveError,    setSaveError]    = useState(null);
@@ -136,7 +180,7 @@ const UserManagement = () => {
 
   /* ── open modal ── */
   const openCreateModal = () => {
-    setFormData({ id:'', name:'', email:'', roleId:'', role:'' });
+    setFormData({ id:'', name:'', email:'', roleId:'', role:'', siteId: sites.length > 0 ? String(sites[0].id) : '' });
     setFormConfig(buildDefaultConfig());
     setSaveError(null);
     setShowModal(true);
@@ -146,12 +190,18 @@ const UserManagement = () => {
     const fp = user.featurePermissions || {};
     const cfg = buildDefaultConfig();
     Object.keys(moduleDetails).forEach(k => { if (fp[k] !== undefined) cfg[k] = fp[k] !== false; });
+
+    const matchedRole = roles.find(r => String(r.id) === String(user.roleId || user.role?.id));
+    const roleIdVal = user.role?.id || user.roleId || matchedRole?.id || '';
+    const roleNameVal = user.role?.name || user.roleName || matchedRole?.name || '';
+
     setFormData({
       id    : user.id,
       name  : user.name  || '',
       email : user.email || '',
-      roleId: user.role?.id ? String(user.role.id) : '',
-      role  : user.role?.name || '',
+      roleId: roleIdVal ? String(roleIdVal) : '',
+      role  : roleNameVal,
+      siteId: user.siteId ? String(user.siteId) : (sites.length > 0 ? String(sites[0].id) : ''),
     });
     setFormConfig(cfg);
     setSaveError(null);
@@ -159,9 +209,9 @@ const UserManagement = () => {
   };
 
   /* ── delete ── */
-  const handleDeleteUser = async (userId, name) => {
+  const handleDeleteUser = async (userId, name, userSiteId) => {
     if (!window.confirm(`Are you sure you want to delete operator "${name}"?`)) return;
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = userSiteId || (sites.length > 0 ? sites[0].id : 1);
     try {
       const res  = await fetchWithAuth(`http://localhost:3001/api/v1/users/${userId}?siteId=${siteId}`, { method: 'DELETE' });
       const json = await res.json().catch(() => ({}));
@@ -176,10 +226,10 @@ const UserManagement = () => {
   };
 
   /* ── status toggle ── */
-  const handleToggleStatus = async (userId, name, currentStatus) => {
+  const handleToggleStatus = async (userId, name, currentStatus, userSiteId) => {
     const newStatus = !currentStatus;
     setUsers(p => p.map(u => u.id === userId ? { ...u, enabled: newStatus } : u));
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = userSiteId || (sites.length > 0 ? sites[0].id : 1);
     try {
       const res  = await fetchWithAuth(`http://localhost:3001/api/v1/users/${userId}`, {
         method : 'PATCH',
@@ -221,8 +271,54 @@ const UserManagement = () => {
     setSaving(true); setSaveError(null);
     const featurePermissions = {};
     Object.keys(moduleDetails).forEach(k => { featurePermissions[k] = formConfig[k] !== false; });
-    const siteId  = sites.length > 0 ? sites[0].id : 1;
+    const siteId  = formData.siteId ? parseInt(formData.siteId, 10) : (sites.length > 0 ? sites[0].id : 1);
     const isEdit  = !!formData.id;
+
+    // Resolve original user's siteId to check if it has changed
+    const origUser = users.find(u => String(u.id) === String(formData.id));
+    const origSiteId = origUser ? origUser.siteId : null;
+
+    if (isEdit && origSiteId && parseInt(origSiteId, 10) !== siteId) {
+      try {
+        // 1. Delete user from old site
+        const deleteRes = await fetchWithAuth(`http://localhost:3001/api/v1/users/${formData.id}?siteId=${origSiteId}`, { method: 'DELETE' });
+        if (!deleteRes.ok) {
+          const json = await deleteRes.json().catch(() => ({}));
+          throw new Error(json.message || json.error || `Failed to remove user from old site`);
+        }
+
+        // 2. Re-create user with the new siteId and updated details
+        const payload = {
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          roleId: parseInt(formData.roleId, 10),
+          enabled: true,
+          featurePermissions,
+          siteId
+        };
+        const createRes = await fetchWithAuth(`http://localhost:3001/api/v1/users`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await createRes.json().catch(() => ({}));
+        if (createRes.ok && json.success !== false) {
+          setShowModal(false);
+          setSaveMsg(`✓ "${formData.name}" transferred to new site successfully!`);
+          setTimeout(() => setSaveMsg(null), 4000);
+          fetchUsers(pagination.page);
+        } else {
+          throw new Error(json.message || json.error || `Failed to create user on new site`);
+        }
+      } catch (err) {
+        console.error(err);
+        setSaveError(err.message || 'Error occurred during site transfer');
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     const payload = { name: formData.name.trim(), email: formData.email.trim(), roleId: parseInt(formData.roleId, 10), enabled: true, featurePermissions, siteId };
     try {
       const res  = await fetchWithAuth(
@@ -267,10 +363,16 @@ const UserManagement = () => {
 
   const enabledCount = Object.keys(moduleDetails).filter(k => formConfig[k] !== false).length;
   const totalMods    = Object.keys(moduleDetails).length;
+  const colors       = ["#8C3B06", "#2A1206", "#0c0502", "#4a1c02"];
 
   /* ═══════════════════════ RENDER ════════════════════════ */
   return (
-    <div className="um-wrap">
+    <div className="um-wrap" style={{
+      background: `linear-gradient(180deg, ${colors[0]} 0%, ${colors[1]} 30%, ${colors[2]} 65%, ${colors[3]} 100%)`,
+      minHeight: '100vh',
+      margin: '-1.5rem -1.5rem -3.5rem -1.5rem',
+      padding: '1.5rem 1.5rem 3.5rem 1.5rem',
+    }}>
 
       {/* ── Page header ── */}
       <div className="um-page-header mb-4">
@@ -294,40 +396,39 @@ const UserManagement = () => {
             </div>
 
             {/* Role Filter */}
-            <select
-              className="um-filter-select"
+            <CustomSelect
               value={filterRole}
-              onChange={e => setFilterRole(e.target.value)}
-            >
-              <option value="">All Roles</option>
-              {roles.map(r => (
-                <option key={r.id} value={String(r.id)}>
-                  {r.name}
-                </option>
-              ))}
-            </select>
+              onChange={val => setFilterRole(val)}
+              options={[
+                { value: '', label: 'All Roles' },
+                ...roles.map(r => ({ value: String(r.id), label: r.name }))
+              ]}
+              placeholder="All Roles"
+            />
 
             {/* Active Status Filter */}
-            <select
-              className="um-filter-select"
+            <CustomSelect
               value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
-            >
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="disabled">Disabled</option>
-            </select>
+              onChange={val => setFilterStatus(val)}
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'active', label: 'Active' },
+                { value: 'disabled', label: 'Disabled' }
+              ]}
+              placeholder="All Statuses"
+            />
 
             {/* Sync Status Filter */}
-            <select
-              className="um-filter-select"
+            <CustomSelect
               value={filterSync}
-              onChange={e => setFilterSync(e.target.value)}
-            >
-              <option value="">All Sync States</option>
-              <option value="synced">Synced to BMS</option>
-              <option value="unsynced">Sync Now</option>
-            </select>
+              onChange={val => setFilterSync(val)}
+              options={[
+                { value: '', label: 'All Sync States' },
+                { value: 'synced', label: 'Synced to BMS' },
+                { value: 'unsynced', label: 'Sync Now' }
+              ]}
+              placeholder="All Sync States"
+            />
 
             <button
               onClick={() => {
@@ -402,6 +503,7 @@ const UserManagement = () => {
                       <th>OPERATOR</th>
                       <th>EMAIL</th>
                       <th>ROLE</th>
+                      <th>SITE</th>
                       <th>STATUS</th>
                       <th>SYNCED TO BMS</th>
                       <th className="text-center" style={{ width: '110px' }}>ACTIONS</th>
@@ -415,6 +517,8 @@ const UserManagement = () => {
                       const avatarBg  = getAvatarBg(user.name || '');
                       const initial   = user.name?.charAt(0)?.toUpperCase() || 'U';
                       const isActive  = user.enabled !== false;
+                      const matchedSite = sites.find(s => String(s.id) === String(user.siteId));
+                      const siteName  = matchedSite ? matchedSite.name : '—';
 
                       return (
                         <tr key={user.id} className="um-tr">
@@ -441,19 +545,27 @@ const UserManagement = () => {
                           <td>
                             <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
                               <span className="um-role-badge" style={{
-                                background: roleType === 'SYSTEM' ? 'rgba(251,191,36,0.1)' : roleType === 'INSTALLATION' ? 'rgba(167,139,250,0.1)' : 'rgba(56,189,248,0.1)',
-                                border: `1px solid ${roleType === 'SYSTEM' ? 'rgba(251,191,36,0.25)' : roleType === 'INSTALLATION' ? 'rgba(167,139,250,0.25)' : 'rgba(56,189,248,0.25)'}`,
-                                color:  roleType === 'SYSTEM' ? '#fbbf24' : roleType === 'INSTALLATION' ? '#c4b5fd' : '#38bdf8',
+                                background: roleType === 'SYSTEM' ? '#d97706' : roleType === 'INSTALLATION' ? '#7c3aed' : '#0284c7',
+                                color:  '#ffffff',
+                                padding: '0.28rem 0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.65rem',
+                                fontWeight: 800,
                               }}>{roleName}</span>
                               {roleType && <span style={{ fontSize:'0.62rem', color:'#475569' }}>{roleType}</span>}
                             </div>
+                          </td>
+
+                          {/* SITE */}
+                          <td>
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{siteName}</span>
                           </td>
 
                           {/* STATUS TOGGLE */}
                           <td>
                             <div className="d-flex align-items-center gap-2">
                               <div
-                                onClick={() => handleToggleStatus(user.id, user.name, isActive)}
+                                onClick={() => handleToggleStatus(user.id, user.name, isActive, user.siteId)}
                                 style={{
                                   width:'38px', height:'22px', borderRadius:'11px',
                                   background: isActive ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.06)',
@@ -491,12 +603,13 @@ const UserManagement = () => {
                             ) : (
                               <button onClick={() => handleSyncUser(user.id, user.name)} className="um-sync-btn"
                                 style={{
-                                  background: user.syncedToBMS ? 'rgba(56,189,248,0.08)' : 'rgba(244,63,94,0.08)',
-                                  border: `1px solid ${user.syncedToBMS ? 'rgba(56,189,248,0.22)' : 'rgba(244,63,94,0.22)'}`,
-                                  color: user.syncedToBMS ? '#38bdf8' : '#f43f5e',
+                                  background: user.syncedToBMS ? '#10b981' : '#e11d48',
+                                  border: 'none',
+                                  color: '#ffffff',
                                   display:'inline-flex', alignItems:'center', gap:'5px',
-                                  fontSize:'0.7rem', fontWeight:700, padding:'0.22rem 0.65rem',
+                                  fontSize:'0.7rem', fontWeight:800, padding:'0.28rem 0.8rem',
                                   borderRadius:'20px', cursor:'pointer', transition:'all 0.2s', outline:'none',
+                                  boxShadow: user.syncedToBMS ? '0 2px 8px rgba(16,185,129,0.25)' : '0 2px 8px rgba(225,29,72,0.25)',
                                 }}>
                                 {user.syncedToBMS ? '✓ Synced' : '✗ Sync Now'}
                               </button>
@@ -509,7 +622,7 @@ const UserManagement = () => {
                               <button className="um-action-btn settings" title="Edit / Permissions" onClick={() => openEditModal(user)}>
                                 <Key size={14} />
                               </button>
-                              <button className="um-action-btn delete" title="Delete" onClick={() => handleDeleteUser(user.id, user.name)}>
+                              <button className="um-action-btn delete" title="Delete" onClick={() => handleDeleteUser(user.id, user.name, user.siteId)}>
                                 <Trash2 size={14} />
                               </button>
                             </div>
@@ -538,7 +651,7 @@ const UserManagement = () => {
                       const pg = i+1; const isAct = pg === pagination.page;
                       return (
                         <button key={pg} onClick={() => fetchUsers(pg)}
-                          style={{ background: isAct ? 'linear-gradient(135deg,#0ea5e9,#2563eb)' : 'rgba(255,255,255,0.03)',
+                          style={{ background: isAct ? 'linear-gradient(135deg,#e05e00,#8c3b06)' : 'rgba(255,255,255,0.03)',
                             border: isAct ? 'none' : '1px solid rgba(255,255,255,0.08)',
                             color:'#fff', borderRadius:'7px', width:'28px', height:'28px',
                             display:'flex', alignItems:'center', justifyContent:'center',
@@ -562,8 +675,8 @@ const UserManagement = () => {
       <Modal show={showModal} onHide={() => { setShowModal(false); setSaveError(null); }} centered size="lg" className="um-modal">
         <Modal.Header closeButton className="border-0 pb-2">
           <Modal.Title className="d-flex align-items-center gap-3" style={{ color:'#fff', fontWeight:800, fontSize:'1.15rem' }}>
-            <div style={{ width:'40px', height:'40px', borderRadius:'12px', background:'rgba(56,189,248,0.1)',
-              border:'1px solid rgba(56,189,248,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#38bdf8' }}>
+            <div style={{ width:'40px', height:'40px', borderRadius:'12px', background:'rgba(224,94,0,0.1)',
+              border:'1px solid rgba(224,94,0,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#e05e00' }}>
               <UserPlus size={20} />
             </div>
             {formData.id ? 'Edit Operator & Permissions' : 'Register New Operator'}
@@ -575,30 +688,38 @@ const UserManagement = () => {
 
             {/* ── Basic Info Row ── */}
             <Row className="g-3 mb-4">
-              <Col md={4}>
+              <Col md={6}>
                 <label className="um-form-label">Full Name</label>
                 <input type="text" className="um-form-input" placeholder="e.g. Sanjay Gupta"
                   value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
               </Col>
-              <Col md={4}>
+              <Col md={6}>
                 <label className="um-form-label">Email Address</label>
                 <input type="email" className="um-form-input" placeholder="e.g. sochiot@gmail.com"
                   value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
               </Col>
-              <Col md={4}>
+              <Col md={6}>
                 <label className="um-form-label">Role</label>
-                <select className="um-form-input" value={formData.roleId || ''}
-                  onChange={e => {
-                    const sel = roles.find(r => String(r.id) === e.target.value);
-                    setFormData({ ...formData, roleId: e.target.value, role: sel?.name || '' });
-                  }} required>
-                  <option value="" disabled>{rolesLoading ? 'Loading roles...' : '— Select Role —'}</option>
-                  {roles.map(r => (
-                    <option key={r.id} value={String(r.id)}>
-                      {r.name}{r.roleType ? ` (${r.roleType})` : ''}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  value={formData.roleId || ''}
+                  onChange={val => {
+                    const sel = roles.find(r => String(r.id) === val);
+                    setFormData({ ...formData, roleId: val, role: sel?.name || '' });
+                  }}
+                  options={roles.map(r => ({ value: String(r.id), label: `${r.name}${r.roleType ? ` (${r.roleType})` : ''}` }))}
+                  placeholder="— Select Role —"
+                  className="w-100"
+                />
+              </Col>
+              <Col md={6}>
+                <label className="um-form-label">Site</label>
+                <CustomSelect
+                  value={formData.siteId || ''}
+                  onChange={val => setFormData({ ...formData, siteId: val })}
+                  options={sites.map(s => ({ value: String(s.id), label: s.name }))}
+                  placeholder="— Select Site —"
+                  className="w-100"
+                />
               </Col>
             </Row>
 
@@ -636,17 +757,17 @@ const UserManagement = () => {
                       <div className="um-mini-toggle">
                         <div style={{
                           width:'32px', height:'18px', borderRadius:'9px',
-                          background: on ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)',
-                          border: `1.5px solid ${on ? 'rgba(56,189,248,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                          background: on ? 'rgba(224,94,0,0.2)' : 'rgba(255,255,255,0.06)',
+                          border: `1.5px solid ${on ? 'rgba(224,94,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
                           position:'relative', transition:'all 0.2s',
                         }}>
                           <div style={{
                             width:'12px', height:'12px', borderRadius:'50%',
-                            background: on ? '#38bdf8' : '#475569',
+                            background: on ? '#e05e00' : '#475569',
                             position:'absolute', top:'2px',
                             left: on ? '16px' : '2px',
                             transition:'all 0.2s',
-                            boxShadow: on ? '0 0 6px rgba(56,189,248,0.7)' : 'none',
+                            boxShadow: on ? '0 0 6px rgba(224,94,0,0.7)' : 'none',
                           }} />
                         </div>
                       </div>
@@ -694,17 +815,27 @@ const UserManagement = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes umSpin { to { transform: rotate(360deg); } }
 
+        .um-wrap {
+          background: linear-gradient(180deg, #8C3B06 0%, #2A1206 30%, #0c0502 65%, #4a1c02 100%);
+          min-height: 100vh;
+          margin: -1.5rem -1.5rem -3.5rem -1.5rem;
+          padding: 1.5rem 1.5rem 3.5rem 1.5rem;
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
         /* ── page header ── */
         .um-page-header { }
         .um-page-title  { font-size: 1.6rem; font-weight: 800; color: #f1f5f9; margin-bottom: 0.25rem; }
-        .um-page-sub    { font-size: 0.82rem; color: #64748b; margin-bottom: 0; }
+        .um-page-sub    { font-size: 0.82rem; color: rgba(255, 255, 255, 0.7); margin-bottom: 0; }
 
         /* ── toolbar ── */
         .um-toolbar {
-          background: rgba(255,255,255,0.015);
-          border: 1px solid rgba(255,255,255,0.05);
+          background: rgba(14, 7, 3, 0.55);
+          border: 1px solid rgba(224, 94, 0, 0.2);
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
           border-radius: 14px;
           padding: 0.9rem 1.2rem;
+          box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
         .um-search-box   { position:relative; display:flex; align-items:center; min-width:260px; }
         .um-search-icon  { position:absolute; left:12px; color:#475569; pointer-events:none; }
@@ -713,7 +844,7 @@ const UserManagement = () => {
           border-radius: 10px; color: #e2e8f0; font-size: 0.85rem;
           padding: 0.5rem 1rem 0.5rem 2.2rem; outline: none; transition: all 0.25s; width: 100%; font-family:inherit;
         }
-        .um-search-input:focus  { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.12); }
+        .um-search-input:focus  { border-color: #8c3b06; box-shadow: 0 0 10px rgba(140,59,6,0.18); }
         .um-search-input::placeholder { color: #475569; }
 
         .um-filter-select {
@@ -723,8 +854,8 @@ const UserManagement = () => {
           padding: 0.5rem 2rem 0.5rem 0.75rem; outline: none; transition: all 0.2s;
           cursor: pointer; appearance: none; height: 38px;
         }
-        .um-filter-select:focus { border-color: #38bdf8; color: #e2e8f0; }
-        .um-filter-select option { background: #0f172a; color: #e2e8f0; }
+        .um-filter-select:focus { border-color: #8c3b06; color: #e2e8f0; }
+        .um-filter-select option { background: #1a0b04; color: #e2e8f0; }
 
         .um-count-badge {
           display:inline-flex; align-items:center; font-size:0.72rem; font-weight:700; color:#94a3b8;
@@ -742,11 +873,11 @@ const UserManagement = () => {
         /* ── buttons ── */
         .um-btn-primary {
           display:inline-flex; align-items:center;
-          background: linear-gradient(135deg, #0ea5e9, #2563eb);
+          background: linear-gradient(135deg, #e05e00, #8c3b06);
           border:none; border-radius:25px; color:#fff; font-size:0.8rem; font-weight:800;
           padding:0.58rem 1.3rem; cursor:pointer; transition:all 0.25s; letter-spacing:0.01em;
         }
-        .um-btn-primary:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 6px 20px rgba(14,165,233,0.35); }
+        .um-btn-primary:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 6px 20px rgba(224, 94, 0, 0.35); }
         .um-btn-primary:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
         .um-btn-secondary {
           display:inline-flex; align-items:center;
@@ -758,21 +889,25 @@ const UserManagement = () => {
 
         /* ── card / table ── */
         .um-card {
-          background: rgba(15,23,42,0.6) !important;
-          border: 1px solid rgba(255,255,255,0.07) !important;
+          background: rgba(14, 7, 3, 0.72) !important;
+          border: 1px solid rgba(224, 94, 0, 0.25) !important;
+          border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+          border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
           border-radius: 16px !important; overflow:hidden;
-          backdrop-filter: blur(12px);
+          backdrop-filter: blur(16px);
+          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.95), 0 0 50px rgba(224, 94, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .um-table { border-collapse:collapse; }
         .um-table th {
           padding:0.85rem 1.2rem; font-size:0.65rem; font-weight:800; letter-spacing:0.09em;
-          text-transform:uppercase; color:#475569;
+          text-transform:uppercase; color:#8c7b70;
           background:rgba(255,255,255,0.015);
-          border-bottom:1px solid rgba(255,255,255,0.06); white-space:nowrap;
+          border-bottom:1px solid rgba(224, 94, 0, 0.1); white-space:nowrap;
         }
         .um-tr { border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.2s; }
         .um-tr:last-child { border-bottom:none; }
-        .um-tr:hover { background:rgba(56,189,248,0.03); }
+        .um-tr:hover { background:rgba(224, 94, 0, 0.04); }
         .um-table td { padding:0.85rem 1.2rem; vertical-align:middle; }
 
         /* ── cells ── */
@@ -794,8 +929,8 @@ const UserManagement = () => {
           background:transparent; border:1px solid rgba(255,255,255,0.07); border-radius:8px;
           padding:0.38rem 0.48rem; cursor:pointer; display:inline-flex; align-items:center; transition:all 0.2s;
         }
-        .um-action-btn.settings { color:#38bdf8; }
-        .um-action-btn.settings:hover { background:rgba(56,189,248,0.12); border-color:rgba(56,189,248,0.3); transform:translateY(-1px); }
+        .um-action-btn.settings { color:#e05e00; }
+        .um-action-btn.settings:hover { background:rgba(224, 94, 0, 0.12); border-color:rgba(224, 94, 0, 0.3); transform:translateY(-1px); }
         .um-action-btn.delete   { color:#f87171; }
         .um-action-btn.delete:hover   { background:rgba(248,113,113,0.12); border-color:rgba(248,113,113,0.3); transform:translateY(-1px); }
 
@@ -808,26 +943,29 @@ const UserManagement = () => {
         }
         .um-empty-icon {
           width:56px; height:56px; border-radius:14px;
-          background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.15);
-          display:flex; align-items:center; justify-content:center; color:#38bdf8;
+          background:rgba(224, 94, 0, 0.08); border:1px solid rgba(224, 94, 0, 0.15);
+          display:flex; align-items:center; justify-content:center; color:#e05e00;
         }
         .um-spinner {
           width:32px; height:32px; border:3px solid rgba(255,255,255,0.06);
-          border-top-color:#38bdf8; border-radius:50%; animation:umSpin 0.7s linear infinite;
+          border-top-color:#e05e00; border-radius:50%; animation:umSpin 0.7s linear infinite;
         }
 
         /* ── modal ── */
         .um-modal .modal-content {
-          background: #070d1e;
-          border: 1px solid rgba(255,255,255,0.1);
+          background: #120a05;
+          border: 1px solid rgba(224, 94, 0, 0.25);
+          border-top: 1px solid rgba(255, 255, 255, 0.15);
           border-radius: 18px; color: #e2e8f0;
+          box-shadow: 0 35px 70px -10px rgba(0,0,0,0.9), 0 0 60px rgba(224, 94, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.1);
+          font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
         .um-modal .modal-header { padding: 1.25rem 1.5rem 0.75rem; }
         .um-modal .btn-close    { filter: invert(1) opacity(0.45); }
 
         /* ── form inputs ── */
         .um-form-label {
-          display:block; font-size:0.72rem; font-weight:700; color:#64748b;
+          display:block; font-size:0.72rem; font-weight:700; color:#8c7b70;
           margin-bottom:0.4rem; letter-spacing:0.03em; text-transform:uppercase;
         }
         .um-form-input {
@@ -837,9 +975,9 @@ const UserManagement = () => {
           outline:none; transition:all 0.25s; font-family:inherit;
           appearance: none;
         }
-        .um-form-input:focus     { border-color:#38bdf8; box-shadow:0 0 0 3px rgba(56,189,248,0.12); }
+        .um-form-input:focus     { border-color:#e05e00; box-shadow:0 0 0 3px rgba(224, 94, 0, 0.18); }
         .um-form-input::placeholder { color:#475569; }
-        .um-form-input option    { background:#0f172a; color:#e2e8f0; }
+        .um-form-input option    { background:#1a0b04; color:#e2e8f0; }
 
         /* ── permissions section ── */
         .um-perm-section {
@@ -882,8 +1020,8 @@ const UserManagement = () => {
           user-select: none;
         }
         .um-perm-card.on  {
-          background: rgba(56,189,248,0.06);
-          border-color: rgba(56,189,248,0.2);
+          background: rgba(224, 94, 0, 0.06);
+          border-color: rgba(224, 94, 0, 0.2);
         }
         .um-perm-card.off {
           background: rgba(255,255,255,0.02);
@@ -893,7 +1031,7 @@ const UserManagement = () => {
         .um-perm-card-icon  {
           display: flex; align-items: center; flex-shrink: 0;
         }
-        .um-perm-card.on  .um-perm-card-icon { color: #38bdf8; }
+        .um-perm-card.on  .um-perm-card-icon { color: #e05e00; }
         .um-perm-card.off .um-perm-card-icon { color: #475569; }
         .um-perm-card-label {
           flex: 1; font-size: 0.8rem; font-weight: 600;
@@ -901,6 +1039,94 @@ const UserManagement = () => {
         .um-perm-card.on  .um-perm-card-label { color: #e2e8f0; }
         .um-perm-card.off .um-perm-card-label { color: #475569; }
         .um-mini-toggle { margin-left: auto; flex-shrink: 0; }
+
+        /* ── custom select dropdown ── */
+        .um-custom-select-container {
+          min-width: 160px;
+          position: relative;
+        }
+        .um-custom-select-trigger {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 10px;
+          color: #94a3b8;
+          font-size: 0.82rem;
+          font-weight: 700;
+          padding: 0.5rem 1rem;
+          height: 38px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          cursor: pointer;
+          transition: all 0.2s;
+          user-select: none;
+        }
+        .um-custom-select-trigger:hover {
+          border-color: rgba(224, 94, 0, 0.4);
+          color: #e2e8f0;
+        }
+        .um-custom-select-trigger.active {
+          border-color: #e05e00;
+          color: #e2e8f0;
+          box-shadow: 0 0 0 3px rgba(224, 94, 0, 0.18);
+        }
+        .um-custom-select-arrow {
+          font-size: 0.6rem;
+          margin-left: 0.75rem;
+          color: #64748b;
+          transition: transform 0.2s;
+        }
+        .um-custom-select-dropdown {
+          position: absolute;
+          top: calc(100% + 5px);
+          left: 0;
+          right: 0;
+          background: #1a0b04;
+          border: 1px solid rgba(224, 94, 0, 0.25);
+          border-radius: 10px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+          z-index: 1050;
+          max-height: 200px;
+          overflow-y: auto;
+          padding: 0.3rem;
+        }
+        .um-custom-select-option {
+          padding: 0.52rem 0.75rem;
+          font-size: 0.8rem;
+          font-weight: 600;
+          color: #94a3b8;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.15s;
+          user-select: none;
+          text-align: left;
+        }
+        .um-custom-select-option:hover {
+          background: rgba(224, 94, 0, 0.12);
+          color: #e2e8f0;
+        }
+        .um-custom-select-option.selected {
+          background: #e05e00;
+          color: #ffffff;
+        }
+
+        /* Modal specific overrides for trigger */
+        .um-modal .um-custom-select-trigger {
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.1);
+          color: #e2e8f0;
+          font-size: 0.88rem;
+          font-weight: 500;
+          padding: 0.62rem 1rem;
+          height: 42px;
+        }
+        .um-modal .um-custom-select-trigger:hover {
+          border-color: rgba(224, 94, 0, 0.4);
+        }
+        .um-modal .um-custom-select-trigger.active {
+          border-color: #e05e00;
+          box-shadow: 0 0 0 3px rgba(224, 94, 0, 0.18);
+        }
       `}} />
     </div>
   );
