@@ -323,8 +323,8 @@ const Sidebar = ({ collapsed }) => {
         <div className="mb-2">
           {isSuperAdmin && !isImpersonating && (
             <NavLink to="/super-admin" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <ShieldAlert size={20} className="text-info" />
-              {!collapsed && <span className="ms-3 text-info">Super Admin Console</span>}
+              <ShieldAlert size={20} className="text-accent" />
+              {!collapsed && <span className="ms-3 text-accent">Super Admin Console</span>}
             </NavLink>
           )}
 
@@ -452,7 +452,7 @@ const Sidebar = ({ collapsed }) => {
         }
         .sidebar-link:hover, .sidebar-link.active {
           color: var(--scada-text);
-          background-color: rgba(255, 255, 255, 0.05);
+          background-color: rgba(224, 94, 0, 0.15);
           border-left-color: var(--scada-accent);
         }
         .sidebar-disabled-item {

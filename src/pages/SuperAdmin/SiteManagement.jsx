@@ -29,7 +29,7 @@ const BMS_SERVICES = [
   { id: 'ac', label: 'AC' }
 ];
 
-const PALETTE = ['#38bdf8','#818cf8','#34d399','#fb923c','#f472b6','#a78bfa','#2dd4bf','#facc15'];
+const PALETTE = ['#e05e00','#c44b00','#d4691e','#b5410a','#e8812e','#a0370c','#cd5f1a','#f59540'];
 const avatar  = (name='', idx=0) => ({ bg: PALETTE[idx % PALETTE.length], initials: name.split(/[\s–\-]+/).map(w=>w[0]).join('').slice(0,2).toUpperCase()||'??' });
 const contactAvatar = (name = '') => {
   const initials = name.split(/[\s–\-]+/).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
@@ -873,26 +873,26 @@ const SiteManagement = () => {
                                   width: '6px', 
                                   height: '6px', 
                                   borderRadius: '50%', 
-                                  backgroundColor: site.isActive ? '#22c55e' : '#64748b',
+                                  backgroundColor: site.isActive ? '#e05e00' : '#64748b',
                                   display: 'inline-block',
-                                  boxShadow: site.isActive ? '0 0 6px #22c55e' : 'none'
+                                  boxShadow: site.isActive ? '0 0 6px rgba(224, 94, 0, 0.7)' : 'none'
                                 }}
                                 title={site.isActive ? "Active" : "Inactive"}
                               />
                             </div>
                             <div style={{ display: 'flex', gap: '0.35rem', marginTop: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
                               {site.organizationType && (
-                                <span style={{ fontSize: '0.68rem', background: 'rgba(129, 140, 248, 0.08)', color: '#a5b4fc', border: '1px solid rgba(129, 140, 248, 0.15)', borderRadius: '4px', padding: '0.1rem 0.4rem', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.68rem', background: 'rgba(224, 94, 0, 0.07)', color: '#e8a97a', border: '1px solid rgba(224, 94, 0, 0.15)', borderRadius: '4px', padding: '0.1rem 0.4rem', whiteSpace: 'nowrap' }}>
                                   {site.organizationType}
                                 </span>
                               )}
                               {site.sochiotLocationId && (
-                                <span style={{ fontSize: '0.68rem', background: 'rgba(56, 189, 248, 0.08)', color: 'var(--scada-accent)', border: '1px solid rgba(56, 189, 248, 0.15)', borderRadius: '4px', padding: '0.1rem 0.4rem', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.68rem', background: 'rgba(224, 94, 0, 0.08)', color: 'var(--scada-accent)', border: '1px solid rgba(224, 94, 0, 0.18)', borderRadius: '4px', padding: '0.1rem 0.4rem', whiteSpace: 'nowrap' }}>
                                   L:{site.sochiotLocationId}
                                 </span>
                               )}
                               {site.organizationId && (
-                                <span style={{ fontSize: '0.68rem', background: 'rgba(167, 139, 250, 0.08)', color: '#a78bfa', border: '1px solid rgba(167, 139, 250, 0.15)', borderRadius: '4px', padding: '0.1rem 0.4rem', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.68rem', background: 'rgba(140, 59, 6, 0.1)', color: '#c4814a', border: '1px solid rgba(140, 59, 6, 0.2)', borderRadius: '4px', padding: '0.1rem 0.4rem', whiteSpace: 'nowrap' }}>
                                   O:{site.organizationId}
                                 </span>
                               )}
@@ -1039,9 +1039,9 @@ const SiteManagement = () => {
                                   style={{
                                     fontSize: '0.62rem',
                                     fontWeight: 700,
-                                    background: 'rgba(52, 211, 153, 0.08)',
-                                    color: '#34d399',
-                                    border: '1px solid rgba(52, 211, 153, 0.18)',
+                                    background: 'rgba(224, 94, 0, 0.1)',
+                                    color: '#e05e00',
+                                    border: '1px solid rgba(224, 94, 0, 0.25)',
                                     borderRadius: '4px',
                                     padding: '0.15rem 0.4rem',
                                     whiteSpace: 'nowrap'
@@ -1083,7 +1083,7 @@ const SiteManagement = () => {
         {!loading && sorted.length > 0 && (
           <div className="sm2-card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem', borderTop: '1px solid var(--scada-border)', background: 'rgba(15, 23, 42, 0.15)' }}>
             <div className="sm2-footer-left" style={{ fontSize: '0.8rem', color: 'var(--scada-text-muted)' }}>
-              Showing <strong>{startIndex + 1}–{Math.min(startIndex + itemsPerPage, sorted.length)}</strong> of <strong>{sorted.length}</strong> sites &nbsp;·&nbsp; <span style={{ color: '#4ade80', fontWeight: 600 }}>{activeCount} active</span>
+              Showing <strong>{startIndex + 1}–{Math.min(startIndex + itemsPerPage, sorted.length)}</strong> of <strong>{sorted.length}</strong> sites &nbsp;·&nbsp; <span style={{ color: '#e05e00', fontWeight: 600 }}>{activeCount} active</span>
             </div>
             
             <div className="sm2-pagination" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -1116,9 +1116,9 @@ const SiteManagement = () => {
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
                     style={{
-                      background: isActive ? 'linear-gradient(135deg, #0ea5e9, #2563eb)' : 'rgba(255,255,255,0.03)',
+                      background: isActive ? 'linear-gradient(135deg, #e05e00, #8C3B06)' : 'rgba(255,255,255,0.03)',
                       border: isActive ? 'none' : '1px solid var(--scada-border)',
-                      color: '#fff',
+                      color: isActive ? '#fff' : 'var(--scada-text)',
                       borderRadius: '6px',
                       width: '28px',
                       height: '28px',
@@ -1127,7 +1127,8 @@ const SiteManagement = () => {
                       justifyContent: 'center',
                       fontWeight: isActive ? 700 : 500,
                       cursor: 'pointer',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
+                      boxShadow: isActive ? '0 2px 10px rgba(224, 94, 0, 0.35)' : 'none'
                     }}
                   >
                     {pageNum}
@@ -1550,13 +1551,13 @@ const SiteManagement = () => {
           box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
         .sm2-switch input:checked + .sm2-slider {
-          background-color: rgba(34, 197, 94, 0.15);
-          border-color: rgba(34, 197, 94, 0.45);
+          background-color: rgba(224, 94, 0, 0.18);
+          border-color: rgba(224, 94, 0, 0.5);
         }
         .sm2-switch input:checked + .sm2-slider:before {
           transform: translateX(18px);
-          background-color: #22c55e;
-          box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+          background-color: #e05e00;
+          box-shadow: 0 0 8px rgba(224, 94, 0, 0.55);
         }
         .sm2-divider-v {
           width: 1px;
@@ -1585,14 +1586,14 @@ const SiteManagement = () => {
         .sm2-hd-icon { 
           width: 52px; 
           height: 52px; 
-          background: rgba(56, 189, 248, 0.1); 
-          border: 1px solid rgba(56, 189, 248, 0.25); 
+          background: rgba(224, 94, 0, 0.1); 
+          border: 1px solid rgba(224, 94, 0, 0.25); 
           border-radius: 14px; 
           display: flex; 
           align-items: center; 
           justify-content: center; 
           color: var(--scada-accent);
-          box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+          box-shadow: 0 0 15px rgba(224, 94, 0, 0.15);
         }
         .sm2-hd-title { font-size: 1.35rem; font-weight: 850; margin: 0; color: var(--scada-text); letter-spacing: -0.02em; }
         .sm2-hd-sub { font-size: .82rem; color: var(--scada-text-muted); margin: .25rem 0 0; }
@@ -1608,8 +1609,8 @@ const SiteManagement = () => {
           border-radius: 30px; 
           border: 1px solid; 
         }
-        .sm2-pill-active { background: rgba(34, 197, 94, .12); border-color: rgba(34, 197, 94, .3); color: #4ade80; box-shadow: 0 0 10px rgba(34, 197, 94, 0.1); }
-        .sm2-pill-total { background: rgba(56, 189, 248, .12); border-color: rgba(56, 189, 248, .3); color: var(--scada-accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.1); }
+        .sm2-pill-active { background: rgba(224, 94, 0, 0.12); border-color: rgba(224, 94, 0, 0.3); color: #e05e00; box-shadow: 0 0 10px rgba(224, 94, 0, 0.1); }
+        .sm2-pill-total { background: rgba(224, 94, 0, 0.08); border-color: rgba(224, 94, 0, 0.2); color: var(--scada-accent); box-shadow: 0 0 10px rgba(224, 94, 0, 0.08); }
         
         .sm2-icon-btn { 
           background: rgba(255, 255, 255, .05); 
@@ -1625,14 +1626,14 @@ const SiteManagement = () => {
         .sm2-icon-btn:hover { 
           color: var(--scada-accent); 
           border-color: var(--scada-accent); 
-          background: rgba(56, 189, 248, 0.08); 
+          background: rgba(224, 94, 0, 0.08); 
           transform: translateY(-1px);
         }
         .sm2-primary-btn { 
           display: inline-flex; 
           align-items: center; 
           gap: .45rem; 
-          background: linear-gradient(135deg, #0ea5e9, #2563eb); 
+          background: linear-gradient(135deg, #e05e00, #8C3B06); 
           color: #fff; 
           border: none; 
           border-radius: 10px; 
@@ -1641,11 +1642,11 @@ const SiteManagement = () => {
           font-weight: 750; 
           cursor: pointer; 
           transition: all .25s cubic-bezier(0.4, 0, 0.2, 1); 
-          box-shadow: 0 4px 15px rgba(14, 165, 233, .3); 
+          box-shadow: 0 4px 15px rgba(224, 94, 0, 0.35); 
         }
         .sm2-primary-btn:hover { 
           transform: translateY(-2px); 
-          box-shadow: 0 8px 25px rgba(14, 165, 233, .5); 
+          box-shadow: 0 8px 25px rgba(224, 94, 0, 0.5); 
           filter: brightness(1.1);
         }
 
@@ -1662,7 +1663,7 @@ const SiteManagement = () => {
           border: 1px solid; 
           animation: sm2FadeIn .3s cubic-bezier(0.16, 1, 0.3, 1); 
         }
-        .sm2-toast-success { background: rgba(34, 197, 94, .12); border-color: rgba(34, 197, 94, .3); color: #4ade80; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.15); }
+        .sm2-toast-success { background: rgba(224, 94, 0, 0.12); border-color: rgba(224, 94, 0, 0.3); color: #e05e00; box-shadow: 0 4px 15px rgba(224, 94, 0, 0.15); }
         .sm2-toast-danger { background: rgba(239, 68, 68, .12); border-color: rgba(239, 68, 68, .3); color: #f87171; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.15); }
 
         /* ── Table Card ── */
@@ -1696,8 +1697,8 @@ const SiteManagement = () => {
         }
         .sm2-search:focus-within { 
           border-color: var(--scada-accent); 
-          box-shadow: 0 0 12px rgba(56, 189, 248, 0.15); 
-          background: rgba(56, 189, 248, 0.02);
+          box-shadow: 0 0 12px rgba(224, 94, 0, 0.15); 
+          background: rgba(224, 94, 0, 0.02);
         }
         .sm2-srch-ico { color: var(--scada-text-muted); flex-shrink: 0; }
         .sm2-srch-inp { 
@@ -1746,7 +1747,7 @@ const SiteManagement = () => {
           transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
         }
         .sm2-tr:last-child { border-bottom: none; }
-        .sm2-tr:hover { background-color: rgba(56, 189, 248, 0.05); }
+        .sm2-tr:hover { background-color: rgba(224, 94, 0, 0.04); }
         .sm2-td { 
           padding: 0.6rem 0.7rem; 
           vertical-align: middle; 
@@ -1794,9 +1795,9 @@ const SiteManagement = () => {
         .sm2-id-lbl { 
           font-size: .62rem; 
           font-weight: 900; 
-          background: rgba(56, 189, 248, 0.1); 
+          background: rgba(224, 94, 0, 0.1); 
           color: var(--scada-accent); 
-          border: 1px solid rgba(56, 189, 248, 0.2); 
+          border: 1px solid rgba(224, 94, 0, 0.2); 
           border-radius: 4px; 
           padding: .1rem .4rem; 
           letter-spacing: .06em; 
@@ -1830,7 +1831,7 @@ const SiteManagement = () => {
           border-radius: 20px; 
           border: 1px solid; 
         }
-        .sm2-badge-on { background: rgba(34, 197, 94, .12); border-color: rgba(34, 197, 94, .25); color: #4ade80; }
+        .sm2-badge-on { background: rgba(224, 94, 0, 0.12); border-color: rgba(224, 94, 0, 0.25); color: #e05e00; }
         .sm2-badge-off { background: rgba(148, 163, 184, .08); border-color: rgba(148, 163, 184, .2); color: var(--scada-text-muted); }
         
         .sm2-acts { display: flex; align-items: center; justify-content: center; gap: .5rem; }
@@ -1844,12 +1845,12 @@ const SiteManagement = () => {
           display: flex; 
         }
         .sm2-act-edit { color: var(--scada-accent); } 
-        .sm2-act-edit:hover { background: rgba(56, 189, 248, 0.15); transform: scale(1.08); }
+        .sm2-act-edit:hover { background: rgba(224, 94, 0, 0.12); transform: scale(1.08); }
         .sm2-act-del { color: #f87171; }             
         .sm2-act-del:hover { background: rgba(239, 68, 68, 0.15); transform: scale(1.08); }
         
         .sm2-card-footer { padding: .9rem 1.5rem; border-top: 1px solid var(--scada-border); font-size: .8rem; color: var(--scada-text-muted); background: rgba(15, 23, 42, 0.1); }
-        .sm2-active-count { color: #4ade80; font-weight: 700; }
+        .sm2-active-count { color: #e05e00; font-weight: 700; }
         
         .sm2-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .9rem; }
         .sm2-spinner { width: 34px; height: 34px; border: 3px solid rgba(255, 255, 255, 0.08); border-top-color: var(--scada-accent); border-radius: 50%; animation: sm2Spin .7s linear infinite; }
@@ -1880,7 +1881,7 @@ const SiteManagement = () => {
           max-width: 800px; 
           max-height: 90vh; 
           overflow-y: auto; 
-          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), 0 0 50px rgba(56, 189, 248, 0.05); 
+          box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), 0 0 50px rgba(224, 94, 0, 0.05); 
           animation: sm2SlideUp .3s cubic-bezier(0.16, 1, 0.3, 1); 
         }
         .sm2-del-modal { max-width: 420px; }
@@ -1895,8 +1896,8 @@ const SiteManagement = () => {
         .sm2-m-icon { 
           width: 44px; 
           height: 44px; 
-          background: rgba(56, 189, 248, 0.12); 
-          border: 1px solid rgba(56, 189, 248, 0.25); 
+          background: rgba(224, 94, 0, 0.12); 
+          border: 1px solid rgba(224, 94, 0, 0.25); 
           border-radius: 12px; 
           display: flex; 
           align-items: center; 
@@ -1957,8 +1958,8 @@ const SiteManagement = () => {
         }
         .sm2-inp:focus { 
           border-color: var(--scada-accent); 
-          box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); 
-          background: rgba(56, 189, 248, 0.02); 
+          box-shadow: 0 0 10px rgba(224, 94, 0, 0.15); 
+          background: rgba(224, 94, 0, 0.02); 
         }
         .sm2-inp::placeholder { color: var(--scada-text-muted); }
         .sm2-sel option { background: var(--scada-sidebar); color: var(--scada-text); }
@@ -1989,7 +1990,7 @@ const SiteManagement = () => {
           display: inline-flex; 
           align-items: center; 
           gap: .4rem; 
-          background: linear-gradient(135deg, #0ea5e9, #2563eb); 
+          background: linear-gradient(135deg, #e05e00, #8C3B06); 
           border: none; 
           color: #fff; 
           border-radius: 10px; 
@@ -1998,9 +1999,9 @@ const SiteManagement = () => {
           font-weight: 800; 
           cursor: pointer; 
           transition: all .2s; 
-          box-shadow: 0 4px 14px rgba(14, 165, 233, .25); 
+          box-shadow: 0 4px 14px rgba(224, 94, 0, 0.3); 
         }
-        .sm2-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(14, 165, 233, .4); }
+        .sm2-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(224, 94, 0, 0.45); }
         .sm2-btn-primary:disabled { opacity: .55; cursor: not-allowed; }
         
         .sm2-del-wrap { padding: 2rem 1.5rem; text-align: center; }
@@ -2058,7 +2059,7 @@ const SiteManagement = () => {
           border-radius: 10px;
         }
         .sm2-contact-row:hover {
-          border-color: rgba(56, 189, 248, 0.15);
+          border-color: rgba(224, 94, 0, 0.2);
           background: rgba(255, 255, 255, 0.03);
         }
         .sm2-contact-remove {
@@ -2096,13 +2097,13 @@ const SiteManagement = () => {
           align-items: flex-start;
           gap: 0.6rem;
           background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
-          border: 1px solid rgba(56, 189, 248, 0.12);
+          border: 1px solid rgba(224, 94, 0, 0.15);
           border-radius: 10px;
           padding: 0.5rem 0.65rem;
           transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sm2-contact-card:hover {
-          border-color: rgba(56, 189, 248, 0.35);
+          border-color: rgba(224, 94, 0, 0.35);
           background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
           transform: translateY(-1px);
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
@@ -2151,7 +2152,7 @@ const SiteManagement = () => {
           flex-shrink: 0;
         }
         .sm2-contact-icon-phone {
-          color: #34d399;
+          color: #e05e00;
           opacity: 0.8;
           flex-shrink: 0;
         }
@@ -2185,8 +2186,8 @@ const SiteManagement = () => {
         }
         .clp-trigger:hover, .clp-trigger:focus { 
           border-color: var(--scada-accent); 
-          box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); 
-          background: rgba(56, 189, 248, 0.02); 
+          box-shadow: 0 0 10px rgba(224, 94, 0, 0.15); 
+          background: rgba(224, 94, 0, 0.02); 
         }
         .clp-trigger-ico { color: var(--scada-accent); opacity: .9; flex-shrink: 0; }
         .clp-trigger-ph { color: var(--scada-text-muted); flex: 1; font-size: .85rem; }
@@ -2203,9 +2204,9 @@ const SiteManagement = () => {
           background: rgba(10, 15, 30, 0.95); 
           backdrop-filter: blur(20px); 
           -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(56, 189, 248, 0.25); 
+          border: 1px solid rgba(224, 94, 0, 0.25); 
           border-radius: 14px;
-          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 40px rgba(56, 189, 248, 0.08); 
+          box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 40px rgba(224, 94, 0, 0.08); 
           overflow: hidden; 
           animation: sm2FadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           width: 100%; 
@@ -2218,14 +2219,14 @@ const SiteManagement = () => {
           flex-wrap: wrap; 
           gap: .3rem; 
           padding: .75rem 1.25rem;
-          border-bottom: 1px solid rgba(56, 189, 248, 0.15); 
-          background: rgba(56, 189, 248, 0.05);
+          border-bottom: 1px solid rgba(224, 94, 0, 0.15); 
+          background: rgba(224, 94, 0, 0.04);
           font-size: .78rem; 
           min-height: 40px; 
         }
         .clp-bc-ico { color: var(--scada-accent); flex-shrink: 0; opacity: 1; }
         .clp-bc-ph { color: var(--scada-text-muted); font-style: italic; }
-        .clp-bc-item { color: var(--scada-text); font-weight: 700; text-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
+        .clp-bc-item { color: var(--scada-text); font-weight: 700; text-shadow: 0 0 10px rgba(224, 94, 0, 0.2); }
         .clp-bc-sep { color: var(--scada-text-muted); margin: 0 .15rem; }
 
         /* Search in dropdown */
@@ -2239,8 +2240,8 @@ const SiteManagement = () => {
           transition: all 0.2s;
         }
         .clp-search-row:focus-within {
-          background: rgba(56, 189, 248, 0.03);
-          border-bottom-color: rgba(56, 189, 248, 0.4);
+          background: rgba(224, 94, 0, 0.03);
+          border-bottom-color: rgba(224, 94, 0, 0.4);
         }
         .clp-s-ico { color: var(--scada-text-muted); flex-shrink: 0; }
         .clp-s-inp { 
@@ -2260,8 +2261,8 @@ const SiteManagement = () => {
         .clp-cols-wrap { display: flex; overflow-x: auto; max-height: 350px; }
         .clp-cols-wrap::-webkit-scrollbar { height: 6px; }
         .clp-cols-wrap::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
-        .clp-cols-wrap::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.25); border-radius: 10px; }
-        .clp-cols-wrap::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.5); }
+        .clp-cols-wrap::-webkit-scrollbar-thumb { background: rgba(224, 94, 0, 0.25); border-radius: 10px; }
+        .clp-cols-wrap::-webkit-scrollbar-thumb:hover { background: rgba(224, 94, 0, 0.5); }
 
         /* Column */
         .clp-col { 
@@ -2277,7 +2278,7 @@ const SiteManagement = () => {
         .clp-col::-webkit-scrollbar { width: 4px; }
         .clp-col::-webkit-scrollbar-track { background: transparent; }
         .clp-col::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 10px; }
-        .clp-col::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.3); }
+        .clp-col::-webkit-scrollbar-thumb:hover { background: rgba(224, 94, 0, 0.3); }
 
         /* Column Header */
         .clp-col-hd { 
@@ -2287,7 +2288,7 @@ const SiteManagement = () => {
           text-transform: uppercase;
           letter-spacing: .15em; 
           color: var(--scada-accent); 
-          border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+          border-bottom: 1px solid rgba(224, 94, 0, 0.2);
           background: rgba(10, 15, 30, 0.98); 
           position: sticky;
           top: 0;
@@ -2312,12 +2313,12 @@ const SiteManagement = () => {
           border-bottom: 1px solid rgba(255, 255, 255, 0.02); 
         }
         .clp-item:hover { 
-          background: rgba(56, 189, 248, 0.08); 
+          background: rgba(224, 94, 0, 0.08); 
           color: var(--scada-text); 
           padding-left: .95rem;
         }
         .clp-item-active { 
-          background: linear-gradient(90deg, rgba(56, 189, 248, 0.18) 0%, rgba(56, 189, 248, 0.03) 100%) !important;
+          background: linear-gradient(90deg, rgba(224, 94, 0, 0.18) 0%, rgba(224, 94, 0, 0.03) 100%) !important;
           color: var(--scada-accent) !important; 
           font-weight: 800;
           border-left: 3px solid var(--scada-accent) !important; 
@@ -2329,7 +2330,7 @@ const SiteManagement = () => {
         .clp-item-name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .clp-item-arrow { color: var(--scada-text-muted); flex-shrink: 0; opacity: .6; transition: all 0.2s; }
         .clp-item:hover .clp-item-arrow { opacity: 1; color: var(--scada-accent); transform: translateX(3px); }
-        .clp-item-check { color: #34d399; flex-shrink: 0; animation: clpScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .clp-item-check { color: var(--scada-accent); flex-shrink: 0; animation: clpScaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
         .clp-item-dot { width: 14px; height: 14px; flex-shrink: 0; }
         .clp-no-results { padding: 1.75rem 1rem; font-size: .8rem; color: var(--scada-text-muted); text-align: center; }
 
@@ -2340,7 +2341,7 @@ const SiteManagement = () => {
         /* Scrollbars */
         .sm2-modal::-webkit-scrollbar { width: 6px; }
         .sm2-modal::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        .sm2-modal::-webkit-scrollbar-thumb:hover { background: rgba(56, 189, 248, 0.3); }
+        .sm2-modal::-webkit-scrollbar-thumb:hover { background: rgba(224, 94, 0, 0.3); }
 
         @keyframes clpScaleIn {
           from { transform: scale(0); opacity: 0; }

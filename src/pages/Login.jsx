@@ -5,7 +5,7 @@ import { Shield, ArrowRight, Key, Mail, Cpu, Globe, Eye, EyeOff } from 'lucide-r
 import logo from "../assets/logo.png";
 import heroImg from "./scada_hero.png";
 
-const Login = () => {
+const Login = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
   const [loginMode, setLoginMode] = useState('admin'); 
   const [credentials, setCredentials] = useState({ username: '', password: '' });
@@ -137,11 +137,17 @@ const Login = () => {
         
         window.dispatchEvent(new Event('storage-update'));
         
-        if (role === 'SUPER_ADMIN') {
-          navigate('/super-admin');
-        } else {
-          navigate('/dashboard');
-        }
+        // Trigger splash screen FIRST, then navigate after one frame
+        if (onLoginSuccess) onLoginSuccess();
+
+        // Small delay so React can mount SplashScreen before route changes
+        setTimeout(() => {
+          if (role === 'SUPER_ADMIN') {
+            navigate('/super-admin');
+          } else {
+            navigate('/dashboard');
+          }
+        }, 80);
       } else {
         setError(data.error || 'Authentication failed');
       }

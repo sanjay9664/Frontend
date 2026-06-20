@@ -545,7 +545,7 @@ const UserManagement = () => {
                           <td>
                             <div style={{ display:'flex', flexDirection:'column', gap:'3px' }}>
                               <span className="um-role-badge" style={{
-                                background: roleType === 'SYSTEM' ? '#d97706' : roleType === 'INSTALLATION' ? '#7c3aed' : '#0284c7',
+                                background: roleType === 'SYSTEM' ? '#d97706' : roleType === 'INSTALLATION' ? '#7c3aed' : '#e05e00',
                                 color:  '#ffffff',
                                 padding: '0.28rem 0.75rem',
                                 borderRadius: '6px',
@@ -568,22 +568,22 @@ const UserManagement = () => {
                                 onClick={() => handleToggleStatus(user.id, user.name, isActive, user.siteId)}
                                 style={{
                                   width:'38px', height:'22px', borderRadius:'11px',
-                                  background: isActive ? 'rgba(74,222,128,0.18)' : 'rgba(255,255,255,0.06)',
-                                  border: `1.5px solid ${isActive ? '#4ade80' : 'rgba(255,255,255,0.12)'}`,
+                                  background: isActive ? 'rgba(224, 94, 0, 0.18)' : 'rgba(255,255,255,0.06)',
+                                  border: `1.5px solid ${isActive ? '#e05e00' : 'rgba(255,255,255,0.12)'}`,
                                   position:'relative', cursor:'pointer', transition:'all 0.25s',
                                   flexShrink: 0,
                                 }}
                               >
                                 <div style={{
                                   width:'15px', height:'15px', borderRadius:'50%',
-                                  background: isActive ? '#4ade80' : '#64748b',
+                                  background: isActive ? '#e05e00' : '#64748b',
                                   position:'absolute', top:'2.5px',
                                   left: isActive ? '19px' : '2.5px',
                                   transition:'all 0.25s cubic-bezier(0.4,0,0.2,1)',
-                                  boxShadow: isActive ? '0 0 8px rgba(74,222,128,0.6)' : 'none',
+                                  boxShadow: isActive ? '0 0 8px rgba(224, 94, 0, 0.6)' : 'none',
                                 }} />
                               </div>
-                              <span style={{ fontSize:'0.72rem', color: isActive ? '#4ade80' : '#64748b', fontWeight:700, minWidth:'46px' }}>
+                              <span style={{ fontSize:'0.72rem', color: isActive ? '#e05e00' : '#64748b', fontWeight:700, minWidth:'46px' }}>
                                 {isActive ? 'Active' : 'Disabled'}
                               </span>
                             </div>
@@ -820,7 +820,7 @@ const UserManagement = () => {
           min-height: 100vh;
           margin: -1.5rem -1.5rem -3.5rem -1.5rem;
           padding: 1.5rem 1.5rem 3.5rem 1.5rem;
-          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          font-family: 'Poppins', system-ui, -apple-system, sans-serif;
         }
 
         /* ── page header ── */
@@ -889,13 +889,13 @@ const UserManagement = () => {
 
         /* ── card / table ── */
         .um-card {
-          background: rgba(14, 7, 3, 0.72) !important;
+          background: rgba(14, 7, 3, 0.75) !important;
           border: 1px solid rgba(224, 94, 0, 0.25) !important;
           border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
           border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
           border-radius: 16px !important; overflow:hidden;
           backdrop-filter: blur(16px);
-          box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.95), 0 0 50px rgba(224, 94, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+          box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px, inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
           transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .um-table { border-collapse:collapse; }
@@ -958,7 +958,7 @@ const UserManagement = () => {
           border-top: 1px solid rgba(255, 255, 255, 0.15);
           border-radius: 18px; color: #e2e8f0;
           box-shadow: 0 35px 70px -10px rgba(0,0,0,0.9), 0 0 60px rgba(224, 94, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.1);
-          font-family: 'Inter', system-ui, -apple-system, sans-serif;
+          font-family: 'Poppins', system-ui, -apple-system, sans-serif;
         }
         .um-modal .modal-header { padding: 1.25rem 1.5rem 0.75rem; }
         .um-modal .btn-close    { filter: invert(1) opacity(0.45); }

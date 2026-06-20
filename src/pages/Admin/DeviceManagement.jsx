@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Row, Col, Card, Modal, Form } from 'react-bootstrap';
 import {
   Plus, Trash2, Save, Search, Settings, RefreshCw, X, CheckCircle,
-  Activity, Zap, Database, Droplets, Flame, Sliders, ShieldAlert
+  Activity, Zap, Database, Droplets, Flame, Sliders, ShieldAlert, ChevronDown
 } from 'lucide-react';
 import { loginToSochiot } from '../../services/authService';
 
@@ -34,6 +34,52 @@ const categoryDetails = {
 
 const getCategoryBadge = (cat = 'OTHER') => {
   return categoryDetails[cat] || categoryDetails.OTHER;
+};
+
+/* ─────────────────────── Custom FilterSelect ─────────────────────── */
+const FilterSelect = ({ value, onChange, disabled, children }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const options = React.Children.toArray(children)
+    .flatMap(child => Array.isArray(child) ? child : [child])
+    .filter(Boolean)
+    .map(child => ({ value: child.props?.value ?? '', label: child.props?.children ?? '' }));
+
+  const selectedLabel = options.find(o => String(o.value) === String(value))?.label || options[0]?.label || 'Select...';
+
+  useEffect(() => {
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
+  return (
+    <div ref={ref} className="um-fsel-wrap">
+      <button
+        type="button"
+        className={`um-fsel-btn${disabled ? ' disabled' : ''}${open ? ' active' : ''}`}
+        onClick={() => !disabled && setOpen(o => !o)}
+      >
+        <span className="um-fsel-label">{selectedLabel}</span>
+        <ChevronDown size={12} className={`um-fsel-arrow${open ? ' open' : ''}`} />
+      </button>
+      {open && !disabled && (
+        <div className="um-fsel-dropdown">
+          {options.map((opt, i) => (
+            <div
+              key={i}
+              className={`um-fsel-option${String(opt.value) === String(value) ? ' selected' : ''}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onChange({ target: { value: opt.value } }); setOpen(false); }}
+            >
+              {opt.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const DeviceManagement = () => {
@@ -435,8 +481,7 @@ const DeviceManagement = () => {
             </div>
 
             {/* Building filter */}
-            <select
-              className="um-filter-select"
+            <FilterSelect
               value={filterBuilding}
               onChange={(e) => {
                 setFilterBuilding(e.target.value);
@@ -447,11 +492,10 @@ const DeviceManagement = () => {
               {buildings.map(b => (
                 <option key={b.id} value={String(b.id)}>{b.name}</option>
               ))}
-            </select>
+            </FilterSelect>
 
             {/* Area filter */}
-            <select
-              className="um-filter-select"
+            <FilterSelect
               value={filterArea}
               onChange={(e) => setFilterArea(e.target.value)}
               disabled={!filterBuilding}
@@ -462,11 +506,10 @@ const DeviceManagement = () => {
                 .map(a => (
                   <option key={a.id} value={String(a.id)}>{a.name}</option>
                 ))}
-            </select>
+            </FilterSelect>
 
             {/* Category filter */}
-            <select
-              className="um-filter-select"
+            <FilterSelect
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
@@ -476,7 +519,7 @@ const DeviceManagement = () => {
                   {categoryDetails[cat].label}
                 </option>
               ))}
-            </select>
+            </FilterSelect>
           </div>
 
           <div className="d-flex align-items-center gap-2">
@@ -605,20 +648,20 @@ const DeviceManagement = () => {
                         >
                           <div style={{
                             width: '38px', height: '20px', borderRadius: '10px',
-                            background: d.isActive ? 'rgba(56,189,248,0.2)' : 'rgba(255,255,255,0.06)',
-                            border: `1.5px solid ${d.isActive ? 'rgba(56,189,248,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                            background: d.isActive ? 'rgba(224,94,0,0.2)' : 'rgba(255,255,255,0.06)',
+                            border: `1.5px solid ${d.isActive ? 'rgba(224,94,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
                             position: 'relative', transition: 'all 0.2s',
                           }}>
                             <div style={{
                               width: '14px', height: '14px', borderRadius: '50%',
-                              background: d.isActive ? '#38bdf8' : '#475569',
+                              background: d.isActive ? '#e05e00' : '#475569',
                               position: 'absolute', top: '1.5px',
                               left: d.isActive ? '20px' : '2px',
                               transition: 'all 0.2s',
-                              boxShadow: d.isActive ? '0 0 6px rgba(56,189,248,0.7)' : 'none',
+                              boxShadow: d.isActive ? '0 0 6px rgba(224,94,0,0.7)' : 'none',
                             }} />
                           </div>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: d.isActive ? '#38bdf8' : '#64748b' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: d.isActive ? '#e05e00' : '#64748b' }}>
                             {d.isActive ? 'ACTIVE' : 'INACTIVE'}
                           </span>
                         </div>
@@ -924,23 +967,29 @@ const DeviceManagement = () => {
 
         /* ── toolbar filters ── */
         .um-filter-select {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(20, 8, 0, 0.95);
+          border: 1px solid rgba(224, 94, 0, 0.22);
           border-radius: 10px;
           color: #e2e8f0;
           font-size: 0.85rem;
-          padding: 0.5rem 1rem;
+          padding: 0.5rem 2.2rem 0.5rem 1rem;
           outline: none;
           transition: all 0.25s;
           font-family: inherit;
           cursor: pointer;
+          appearance: none;
+          -webkit-appearance: none;
+          background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23e05e00' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+          background-repeat: no-repeat;
+          background-position: right 0.7rem center;
+          background-size: 10px 10px;
         }
         .um-filter-select:focus {
-          border-color: #38bdf8;
-          box-shadow: 0 0 10px rgba(56, 189, 248, 0.12);
+          border-color: #e05e00;
+          box-shadow: 0 0 0 2px rgba(224, 94, 0, 0.2);
         }
         .um-filter-select option {
-          background: #0f172a;
+          background: #1a0800;
           color: #e2e8f0;
         }
         .um-filter-select:disabled {
@@ -948,7 +997,48 @@ const DeviceManagement = () => {
           cursor: not-allowed;
         }
 
-        /* ── user management matching classes overrides/fallbacks ── */
+        /* ── Custom FilterSelect dropdown ── */
+        .um-fsel-wrap { position: relative; display: inline-block; }
+        .um-fsel-btn {
+          display: inline-flex; align-items: center; gap: 0.5rem;
+          background: rgba(20, 8, 0, 0.95);
+          border: 1px solid rgba(224, 94, 0, 0.25);
+          border-radius: 10px; color: #e2e8f0;
+          font-size: 0.85rem; font-family: inherit;
+          padding: 0.5rem 0.85rem; cursor: pointer;
+          transition: all 0.2s; white-space: nowrap; min-width: 120px;
+        }
+        .um-fsel-btn:hover, .um-fsel-btn.active {
+          border-color: #e05e00;
+          background: rgba(30, 10, 0, 0.98);
+        }
+        .um-fsel-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+        .um-fsel-label { flex: 1; text-align: left; }
+        .um-fsel-arrow { color: #e05e00; transition: transform 0.2s; flex-shrink: 0; }
+        .um-fsel-arrow.open { transform: rotate(180deg); }
+        .um-fsel-dropdown {
+          position: absolute; top: calc(100% + 6px); left: 0;
+          background: rgba(18, 6, 0, 0.98);
+          border: 1px solid rgba(224, 94, 0, 0.3);
+          border-radius: 10px; min-width: 100%;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.7), 0 0 20px rgba(224,94,0,0.1);
+          z-index: 9999; overflow: hidden;
+          animation: umDropFadeIn 0.15s ease;
+          max-height: 280px; overflow-y: auto;
+        }
+        .um-fsel-dropdown::-webkit-scrollbar { width: 4px; }
+        .um-fsel-dropdown::-webkit-scrollbar-thumb { background: rgba(224,94,0,0.3); border-radius: 4px; }
+        .um-fsel-option {
+          padding: 0.55rem 1rem; font-size: 0.83rem;
+          color: #c8c8c8; cursor: pointer; transition: all 0.15s;
+          border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+        .um-fsel-option:last-child { border-bottom: none; }
+        .um-fsel-option:hover { background: rgba(224,94,0,0.15); color: #fff; padding-left: 1.3rem; }
+        .um-fsel-option.selected { background: rgba(224,94,0,0.2); color: #e05e00; font-weight: 700; }
+        @keyframes umDropFadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+        /* ── toolbar filters (native fallback hidden) ── */
         .um-page-title  { font-size: 1.6rem; font-weight: 800; color: #f1f5f9; margin-bottom: 0.25rem; }
         .um-page-sub    { font-size: 0.82rem; color: #64748b; margin-bottom: 0; }
         
@@ -965,7 +1055,7 @@ const DeviceManagement = () => {
           border-radius: 10px; color: #e2e8f0; font-size: 0.85rem;
           padding: 0.5rem 1rem 0.5rem 2.2rem; outline: none; transition: all 0.25s; width: 100%; font-family:inherit;
         }
-        .um-search-input:focus  { border-color: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.12); }
+        .um-search-input:focus  { border-color: #e05e00; box-shadow: 0 0 10px rgba(224,94,0,0.12); }
         .um-search-input::placeholder { color: #475569; }
 
         .um-count-badge {
@@ -975,17 +1065,17 @@ const DeviceManagement = () => {
         }
         .um-save-badge {
           display:inline-flex; align-items:center; font-size:0.72rem; font-weight:700;
-          color:#4ade80; background:rgba(74,222,128,0.08); border:1px solid rgba(74,222,128,0.2);
+          color:#e05e00; background:rgba(224,94,0,0.08); border:1px solid rgba(224,94,0,0.2);
           border-radius:20px; padding:0.32rem 0.8rem;
         }
 
         .um-btn-primary {
           display:inline-flex; align-items:center;
-          background: linear-gradient(135deg, #0ea5e9, #2563eb);
+          background: linear-gradient(135deg, #e05e00, #8C3B06);
           border:none; border-radius:25px; color:#fff; font-size:0.8rem; font-weight:800;
           padding:0.58rem 1.3rem; cursor:pointer; transition:all 0.25s; letter-spacing:0.01em;
         }
-        .um-btn-primary:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 6px 20px rgba(14,165,233,0.35); }
+        .um-btn-primary:hover { filter:brightness(1.12); transform:translateY(-1px); box-shadow:0 6px 20px rgba(224,94,0,0.35); }
         .um-btn-primary:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
         .um-btn-secondary {
           display:inline-flex; align-items:center;
@@ -1010,7 +1100,7 @@ const DeviceManagement = () => {
         }
         .um-tr { border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.2s; }
         .um-tr:last-child { border-bottom:none; }
-        .um-tr:hover { background:rgba(56,189,248,0.03); }
+        .um-tr:hover { background:rgba(224,94,0,0.04); }
         .um-table td { padding:0.85rem 1.2rem; vertical-align:middle; }
 
         .um-avatar {
@@ -1030,8 +1120,8 @@ const DeviceManagement = () => {
           background:transparent; border:1px solid rgba(255,255,255,0.07); border-radius:8px;
           padding:0.38rem 0.48rem; cursor:pointer; display:inline-flex; align-items:center; transition:all 0.2s;
         }
-        .um-action-btn.settings { color:#38bdf8; }
-        .um-action-btn.settings:hover { background:rgba(56,189,248,0.12); border-color:rgba(56,189,248,0.3); transform:translateY(-1px); }
+        .um-action-btn.settings { color:#e05e00; }
+        .um-action-btn.settings:hover { background:rgba(224,94,0,0.12); border-color:rgba(224,94,0,0.3); transform:translateY(-1px); }
         .um-action-btn.delete   { color:#f87171; }
         .um-action-btn.delete:hover   { background:rgba(248,113,113,0.12); border-color:rgba(248,113,113,0.3); transform:translateY(-1px); }
 
@@ -1041,17 +1131,17 @@ const DeviceManagement = () => {
         }
         .um-empty-icon {
           width:56px; height:56px; border-radius:14px;
-          background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.15);
-          display:flex; align-items:center; justify-content:center; color:#38bdf8;
+          background:rgba(224,94,0,0.08); border:1px solid rgba(224,94,0,0.15);
+          display:flex; align-items:center; justify-content:center; color:#e05e00;
         }
         .um-spinner {
           width:32px; height:32px; border:3px solid rgba(255,255,255,0.06);
-          border-top-color:#38bdf8; border-radius:50%; animation:umSpin 0.7s linear infinite;
+          border-top-color:#e05e00; border-radius:50%; animation:umSpin 0.7s linear infinite;
         }
 
         .um-modal .modal-content {
-          background: #070d1e;
-          border: 1px solid rgba(255,255,255,0.1);
+          background: #120600;
+          border: 1px solid rgba(224,94,0,0.12);
           border-radius: 18px; color: #e2e8f0;
         }
         .um-modal .modal-header { padding: 1.25rem 1.5rem 0.75rem; }
@@ -1067,7 +1157,7 @@ const DeviceManagement = () => {
           color:#e2e8f0; font-size:0.88rem; padding:0.62rem 1rem;
           outline:none; transition:all 0.25s; font-family:inherit;
         }
-        .um-form-input:focus     { border-color:#38bdf8; box-shadow:0 0 0 3px rgba(56,189,248,0.12); }
+        .um-form-input:focus     { border-color:#e05e00; box-shadow:0 0 0 3px rgba(224,94,0,0.12); }
         .um-form-input::placeholder { color:#475569; }
         .um-form-input option    { background:#0f172a; color:#e2e8f0; }
         .um-form-input.select {
