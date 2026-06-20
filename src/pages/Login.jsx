@@ -41,7 +41,7 @@ const Login = () => {
 
         // Try local backend first
         try {
-          const meResponse = await fetch('http://localhost:3001/api/v1/users/me', {
+          const meResponse = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/me`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }

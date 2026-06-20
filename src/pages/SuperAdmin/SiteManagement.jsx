@@ -7,7 +7,7 @@ import {
   Wifi, WifiOff, MapPin, Globe2, Hash, Clock,
   ChevronRight, Check, Loader2, Mail, Phone, User
 } from 'lucide-react';
-import { loginToSochiot, getSochiotUserMe } from '../../services/authService';
+import { getSochiotUserMe } from '../../services/authService';
 
 
 /* ─── Constants ────────────────────────────────────────── */
@@ -269,8 +269,11 @@ const CascadingLocationPicker = ({ onSelect }) => {
     try {
       let userData = await getSochiotUserMe();
       if (!userData) {
-        await loginToSochiot("sa@ismartaccess.com", "I0t3ch");
-        userData = await getSochiotUserMe();
+        localStorage.removeItem('sochiot_token');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        return;
       }
       if (userData && userData.userZoneLocationVO?.companyList) {
         const tree = buildAdjacencyTree(userData.userZoneLocationVO.companyList);
@@ -519,12 +522,10 @@ const SiteManagement = () => {
   const fetchWithAuth = async (url, options = {}) => {
     let token = localStorage.getItem('sochiot_token');
     if (!token) {
-      try {
-        await loginToSochiot("sa@ismartaccess.com", "I0t3ch");
-        token = localStorage.getItem('sochiot_token');
-      } catch (err) {
-        console.error("Login to Sochiot failed:", err);
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
 
     const headers = {
@@ -534,16 +535,9 @@ const SiteManagement = () => {
 
     let r = await fetch(url, { ...options, headers });
     if (r.status === 401) {
-      try {
-        await loginToSochiot("sa@ismartaccess.com", "I0t3ch");
-        token = localStorage.getItem('sochiot_token');
-        const retryHeaders = {
-          ...headers,
-          'Authorization': `Bearer ${token}`
-        };
-        r = await fetch(url, { ...options, headers: retryHeaders });
-      } catch (err) {
-        console.error("Token refresh failed:", err);
+      localStorage.removeItem('sochiot_token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
     }
     return r;
@@ -553,7 +547,7 @@ const SiteManagement = () => {
   const fetchSites = async () => {
     setLoading(true);
     try {
-      const r = await fetchWithAuth('http://localhost:3001/api/v1/sites/');
+      const r = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/`);
       if (r.ok) {
         const json = await r.json();
         const d = json.data;
@@ -658,7 +652,7 @@ const SiteManagement = () => {
     };
     try {
       const method = editingSite ? 'PATCH' : 'POST';
-      const url    = editingSite ? `http://localhost:3001/api/v1/sites/${editingSite.id}` : 'http://localhost:3001/api/v1/sites/';
+      const url    = editingSite ? `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${editingSite.id}` : `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/`;
       const r = await fetchWithAuth(url, {
         method,
         headers: {
@@ -693,7 +687,7 @@ const SiteManagement = () => {
   /* ── Delete ──────────────────────────────────────── */
   const handleDelete = async (site) => {
     try {
-      const r = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${site.id}`, {
+      const r = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${site.id}`, {
         method: 'DELETE'
       });
       if (r.ok) {
@@ -718,7 +712,7 @@ const SiteManagement = () => {
       const payload = {
         isActive: !site.isActive
       };
-      const r = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${site.id}`, {
+      const r = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${site.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'

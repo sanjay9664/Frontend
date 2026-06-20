@@ -6,7 +6,7 @@ import {
   ShieldAlert, ClipboardList, PenTool, History, Gauge, User, X,
   CheckCircle, Key, Settings, RefreshCw
 } from 'lucide-react';
-import { loginToSochiot } from '../../services/authService';
+
 
 /* ─────────────────────── module map ─────────────────────── */
 const moduleDetails = {
@@ -114,15 +114,18 @@ const UserManagement = () => {
   const fetchWithAuth = async (url, options = {}) => {
     let token = localStorage.getItem('sochiot_token');
     if (!token) {
-      try { await loginToSochiot('sa@ismartaccess.com', 'I0t3ch'); token = localStorage.getItem('sochiot_token'); }
-      catch (e) { console.error('Login failed:', e); }
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
     const headers = { ...options.headers, Authorization: `Bearer ${token}` };
     let r = await fetch(url, { ...options, headers });
     if (r.status === 401) {
-      try { await loginToSochiot('sa@ismartaccess.com', 'I0t3ch'); token = localStorage.getItem('sochiot_token'); }
-      catch (e) { console.error('Refresh failed:', e); }
-      r = await fetch(url, { ...options, headers: { ...headers, Authorization: `Bearer ${token}` } });
+      localStorage.removeItem('sochiot_token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return r;
   };
@@ -132,8 +135,8 @@ const UserManagement = () => {
     setLoading(true); setApiError(null);
     try {
       const endpoint = forceSochiot
-        ? `http://localhost:3001/api/v1/users/all?page=${page}&pageSize=${pagination.pageSize}`
-        : `http://localhost:3001/api/v1/users?page=${page}&pageSize=${pagination.pageSize}`;
+        ? `${import.meta.env.VITE_BACKEND_BMS_URL}/users/all?page=${page}&pageSize=${pagination.pageSize}`
+        : `${import.meta.env.VITE_BACKEND_BMS_URL}/users?page=${page}&pageSize=${pagination.pageSize}`;
       const res  = await fetchWithAuth(endpoint);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -162,7 +165,7 @@ const UserManagement = () => {
   const fetchRoles = async () => {
     setRolesLoading(true);
     try {
-      const res  = await fetchWithAuth('http://localhost:3001/api/v1/users/roles');
+      const res  = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/roles`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) setRoles(json.data);
     } catch (e) { console.error('Roles fetch failed:', e); }
@@ -171,7 +174,7 @@ const UserManagement = () => {
 
   const fetchSites = async () => {
     try {
-      const res  = await fetchWithAuth('http://localhost:3001/api/v1/sites/');
+      const res  = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/`);
       if (res.ok) { const j = await res.json(); setSites(j.data || []); }
     } catch (e) { console.error('Sites fetch failed:', e); }
   };
@@ -213,7 +216,7 @@ const UserManagement = () => {
     if (!window.confirm(`Are you sure you want to delete operator "${name}"?`)) return;
     const siteId = userSiteId || (sites.length > 0 ? sites[0].id : 1);
     try {
-      const res  = await fetchWithAuth(`http://localhost:3001/api/v1/users/${userId}?siteId=${siteId}`, { method: 'DELETE' });
+      const res  = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/${userId}?siteId=${siteId}`, { method: 'DELETE' });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.success !== false) {
         setSaveMsg(`✓ Operator "${name}" deleted successfully!`);
@@ -231,7 +234,7 @@ const UserManagement = () => {
     setUsers(p => p.map(u => u.id === userId ? { ...u, enabled: newStatus } : u));
     const siteId = userSiteId || (sites.length > 0 ? sites[0].id : 1);
     try {
-      const res  = await fetchWithAuth(`http://localhost:3001/api/v1/users/${userId}`, {
+      const res  = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/${userId}`, {
         method : 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify({ enabled: newStatus, siteId }),
@@ -254,7 +257,7 @@ const UserManagement = () => {
   const handleSyncUser = async (userId, name) => {
     setSyncingStates(p => ({ ...p, [userId]: true }));
     try {
-      const res  = await fetchWithAuth(`http://localhost:3001/api/v1/users/${userId}/sync`, { method: 'POST' });
+      const res  = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/${userId}/sync`, { method: 'POST' });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.success !== false) {
         setSaveMsg(`✓ "${name}" synced to BMS!`);
@@ -281,7 +284,7 @@ const UserManagement = () => {
     if (isEdit && origSiteId && parseInt(origSiteId, 10) !== siteId) {
       try {
         // 1. Delete user from old site
-        const deleteRes = await fetchWithAuth(`http://localhost:3001/api/v1/users/${formData.id}?siteId=${origSiteId}`, { method: 'DELETE' });
+        const deleteRes = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/${formData.id}?siteId=${origSiteId}`, { method: 'DELETE' });
         if (!deleteRes.ok) {
           const json = await deleteRes.json().catch(() => ({}));
           throw new Error(json.message || json.error || `Failed to remove user from old site`);
@@ -296,7 +299,7 @@ const UserManagement = () => {
           featurePermissions,
           siteId
         };
-        const createRes = await fetchWithAuth(`http://localhost:3001/api/v1/users`, {
+        const createRes = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -322,7 +325,7 @@ const UserManagement = () => {
     const payload = { name: formData.name.trim(), email: formData.email.trim(), roleId: parseInt(formData.roleId, 10), enabled: true, featurePermissions, siteId };
     try {
       const res  = await fetchWithAuth(
-        isEdit ? `http://localhost:3001/api/v1/users/${formData.id}` : 'http://localhost:3001/api/v1/users',
+        isEdit ? `${import.meta.env.VITE_BACKEND_BMS_URL}/users/${formData.id}` : `${import.meta.env.VITE_BACKEND_BMS_URL}/users`,
         { method: isEdit ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
       );
       const json = await res.json().catch(() => ({}));

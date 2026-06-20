@@ -4,7 +4,7 @@ import {
   Plus, Trash2, Save, Search, Settings, RefreshCw, X, CheckCircle,
   Activity, Zap, Database, Droplets, Flame, Sliders, ShieldAlert
 } from 'lucide-react';
-import { loginToSochiot } from '../../services/authService';
+
 
 /* ─────────────────────── category map / details ─────────────────────── */
 const categoryDetails = {
@@ -76,29 +76,25 @@ const DeviceManagement = () => {
   const [profiles, setProfiles] = useState([]);
   const [energyGroups, setEnergyGroups] = useState([]);
   const [sites, setSites] = useState([]);
+  const [selectedSiteId, setSelectedSiteId] = useState('');
   const [syncingStates, setSyncingStates] = useState({});
 
   /* ── auth fetch helper ── */
   const fetchWithAuth = async (url, options = {}) => {
     let token = localStorage.getItem('sochiot_token');
     if (!token) {
-      try {
-        await loginToSochiot('sa@ismartaccess.com', 'I0t3ch');
-        token = localStorage.getItem('sochiot_token');
-      } catch (e) {
-        console.error('Login failed:', e);
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
     }
     const headers = { ...options.headers, Authorization: `Bearer ${token}` };
     let r = await fetch(url, { ...options, headers });
     if (r.status === 401) {
-      try {
-        await loginToSochiot('sa@ismartaccess.com', 'I0t3ch');
-        token = localStorage.getItem('sochiot_token');
-      } catch (e) {
-        console.error('Refresh failed:', e);
+      localStorage.removeItem('sochiot_token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
       }
-      r = await fetch(url, { ...options, headers: { ...headers, Authorization: `Bearer ${token}` } });
     }
     return r;
   };
@@ -106,17 +102,13 @@ const DeviceManagement = () => {
   /* ── data fetchers ── */
   const fetchSites = async () => {
     try {
-      const res = await fetchWithAuth('http://localhost:3001/api/v1/sites/');
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/`);
       if (res.ok) {
         const j = await res.json();
         const siteList = j.data || [];
         setSites(siteList);
         if (siteList.length > 0) {
-          const siteId = siteList[0].id;
-          fetchBuildings(siteId);
-          fetchAreas(siteId);
-          fetchEnergyGroups(siteId);
-          fetchDevices(siteId, 1);
+          setSelectedSiteId(String(siteList[0].id));
         }
       }
     } catch (e) {
@@ -126,7 +118,7 @@ const DeviceManagement = () => {
 
   const fetchBuildings = async (siteId) => {
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/buildings`);
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/buildings`);
       if (res.ok) {
         const j = await res.json();
         setBuildings(j.data || []);
@@ -138,7 +130,7 @@ const DeviceManagement = () => {
 
   const fetchAreas = async (siteId) => {
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/areas`);
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/areas`);
       if (res.ok) {
         const j = await res.json();
         setAreas(j.data || []);
@@ -150,7 +142,7 @@ const DeviceManagement = () => {
 
   const fetchEnergyGroups = async (siteId) => {
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/energy-groups`);
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/energy-groups`);
       if (res.ok) {
         const j = await res.json();
         setEnergyGroups(j.data || []);
@@ -162,7 +154,7 @@ const DeviceManagement = () => {
 
   const fetchProfiles = async () => {
     try {
-      const res = await fetchWithAuth('http://localhost:3001/api/v1/profiles');
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/profiles`);
       if (res.ok) {
         const j = await res.json();
         setProfiles(j.data || []);
@@ -176,7 +168,7 @@ const DeviceManagement = () => {
     setLoading(true);
     setApiError(null);
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/devices?page=${page}&pageSize=${pagination.pageSize}`);
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/devices?page=${page}&pageSize=${pagination.pageSize}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.success && json.data) {
@@ -205,6 +197,15 @@ const DeviceManagement = () => {
     fetchSites();
     fetchProfiles();
   }, []);
+
+  useEffect(() => {
+    if (selectedSiteId) {
+      fetchBuildings(selectedSiteId);
+      fetchAreas(selectedSiteId);
+      fetchEnergyGroups(selectedSiteId);
+      fetchDevices(selectedSiteId, 1);
+    }
+  }, [selectedSiteId]);
 
   /* ── open modals ── */
   const openCreateModal = () => {
@@ -258,7 +259,7 @@ const DeviceManagement = () => {
     setSaving(true);
     setSaveError(null);
 
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
     const isEdit = !!formData.id;
 
     // Build payload
@@ -292,8 +293,8 @@ const DeviceManagement = () => {
 
     try {
       const url = isEdit
-        ? `http://localhost:3001/api/v1/sites/${siteId}/devices/${formData.id}`
-        : `http://localhost:3001/api/v1/sites/${siteId}/devices`;
+        ? `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/devices/${formData.id}`
+        : `${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/devices`;
 
       const res = await fetchWithAuth(url, {
         method: isEdit ? 'PATCH' : 'POST',
@@ -321,9 +322,9 @@ const DeviceManagement = () => {
   /* ── delete device ── */
   const handleDeleteDevice = async (deviceId, name) => {
     if (!window.confirm(`Are you sure you want to delete device "${name}"?`)) return;
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/devices/${deviceId}`, {
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/devices/${deviceId}`, {
         method: 'DELETE'
       });
       const json = await res.json().catch(() => ({}));
@@ -344,9 +345,9 @@ const DeviceManagement = () => {
   const handleToggleStatus = async (deviceId, name, currentStatus) => {
     const newStatus = !currentStatus;
     setDevices(prev => prev.map(d => d.id === deviceId ? { ...d, isActive: newStatus } : d));
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/devices/${deviceId}`, {
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/devices/${deviceId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: newStatus })
@@ -368,9 +369,9 @@ const DeviceManagement = () => {
   /* ── sync device ── */
   const handleSyncDevice = async (deviceId, name) => {
     setSyncingStates(p => ({ ...p, [deviceId]: true }));
-    const siteId = sites.length > 0 ? sites[0].id : 1;
+    const siteId = selectedSiteId || (sites.length > 0 ? String(sites[0].id) : '1');
     try {
-      const res = await fetchWithAuth(`http://localhost:3001/api/v1/sites/${siteId}/devices/${deviceId}/sync`, {
+      const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/sites/${siteId}/devices/${deviceId}/sync`, {
         method: 'POST'
       });
       const json = await res.json().catch(() => ({}));
@@ -414,9 +415,24 @@ const DeviceManagement = () => {
   return (
     <div className="um-wrap">
       {/* ── Page Header ── */}
-      <div className="um-page-header mb-4">
-        <h2 className="um-page-title">Device Configuration</h2>
-        <p className="um-page-sub">Configure buildings, areas, categories, and sync devices with the Sochiot core engine.</p>
+      <div className="um-page-header mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div>
+          <h2 className="um-page-title mb-0">Device Configuration</h2>
+        </div>
+
+        <div className="d-flex align-items-center gap-2">
+          <span className="text-secondary font-monospace" style={{ fontSize: '0.78rem', fontWeight: 800 }}>ACTIVE SITE:</span>
+          <select
+            className="um-filter-select font-semibold"
+            style={{ minWidth: '220px', background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}
+            value={selectedSiteId}
+            onChange={(e) => setSelectedSiteId(e.target.value)}
+          >
+            {sites.map(s => (
+              <option key={s.id} value={String(s.id)}>{s.name}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* ── Toolbar ── */}
