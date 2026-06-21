@@ -6,7 +6,7 @@ import brandLogo from '../assets/trueisense.jpeg';
    ────────────────────────────────────────────────────────────── */
 const SplashScreen = ({ onComplete }) => {
   const [fadeOut, setFadeOut] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(true);
 
   // Pre-load the brand image locally to ensure it is cached and ready in memory
   useEffect(() => {
@@ -29,19 +29,19 @@ const SplashScreen = ({ onComplete }) => {
   useEffect(() => {
     if (!imageLoaded) return;
 
-    // Start screen fade-out at 1.4s
-    const tFadeOut = setTimeout(() => setFadeOut(true), 1400);
+    // Start screen fade-out at 800ms
+    const tFadeOut = setTimeout(() => setFadeOut(true), 800);
 
-    // Complete transition at 1.9s
+    // Complete transition at 1200ms
     const tComplete = setTimeout(() => {
       if (onComplete) onComplete();
-    }, 1900);
+    }, 1200);
 
     return () => {
       clearTimeout(tFadeOut);
       clearTimeout(tComplete);
     };
-  }, [onComplete, imageLoaded]);
+  }, [imageLoaded, onComplete]);
 
   // ── Inline Styles ──────────────────────────────────────────
   const overlayStyle = {
@@ -111,7 +111,8 @@ const SplashScreen = ({ onComplete }) => {
     height: '100%',
     objectFit: 'cover',
     objectPosition: 'center 42%',
-    opacity: 0.95,
+    opacity: imageLoaded ? 0.95 : 0,
+    transition: 'opacity 0.5s ease-in-out',
     zIndex: 1,
   };
 
@@ -131,10 +132,7 @@ const SplashScreen = ({ onComplete }) => {
     opacity: 0,
   };
 
-  // Keep screen blank gradient while image is pre-loading to prevent unstyled layout flash
-  if (!imageLoaded) {
-    return <div style={overlayStyle} />;
-  }
+
 
   return (
     <div style={overlayStyle}>

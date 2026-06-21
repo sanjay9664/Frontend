@@ -25,6 +25,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/sochiot-config/, '')
       },
+      '/sochiot-location': {
+        target: 'https://app.sochiot.com/api/location-engine',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sochiot-location/, '')
+      },
       '/sochiot-triggers': {
         target: 'https://app.sochiot.com/api/triggers',
         changeOrigin: true,

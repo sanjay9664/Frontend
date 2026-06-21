@@ -24,9 +24,98 @@ const Sidebar = ({ collapsed }) => {
   const isAdmin = userRole === 'ADMIN';
   const isImpersonating = !!localStorage.getItem('impersonator_backup_role');
 
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const roleName = (userData.roleName || userRole || '').toLowerCase();
+
+  const isOrgAdmin = roleName.includes('org') || roleName.includes('organisation') || roleName.includes('organization');
+  const isZone = roleName.includes('zone');
+  const isArea = roleName.includes('area');
+  const isLoc = roleName.includes('location');
+  const isUnit = roleName.includes('unit');
+  const showAdvancedSettings = isSuperAdmin || isAdmin || isOrgAdmin || isZone || isArea || isLoc || isUnit;
+
   useEffect(() => {
+    let intervalId;
     const fetchConfig = async () => {
       try {
+        let localFp = {};
+        const token = localStorage.getItem('sochiot_token');
+        if (token) {
+          try {
+            const meRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/me`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              const fetchedUser = meData.data || meData || {};
+              localFp = fetchedUser.featurePermissions || {};
+
+              // Dynamically sync userData name and roleName in localStorage
+              try {
+                const savedUserDataStr = localStorage.getItem('userData');
+                if (savedUserDataStr) {
+                  const userDataObj = JSON.parse(savedUserDataStr);
+                  const nextName = fetchedUser.name || fetchedUser.username || userDataObj.name;
+                  
+                  // Resolve dynamic roleName using fetched roles if not present directly
+                  let nextRoleName = '';
+                  if (fetchedUser.roles && fetchedUser.roles.length > 0) {
+                    const firstRole = fetchedUser.roles[0];
+                    if (firstRole === 'SUPER_ADMIN') {
+                      nextRoleName = 'Super Admin';
+                    } else if (firstRole === 'ADMIN') {
+                      nextRoleName = 'Administrator';
+                    } else {
+                      nextRoleName = firstRole;
+                    }
+                  } else {
+                    nextRoleName = fetchedUser.role?.name || fetchedUser.roleName;
+                  }
+
+                  if (!nextRoleName && (fetchedUser.roleId || fetchedUser.role)) {
+                    try {
+                      const rolesRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/roles`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                      });
+                      if (rolesRes.ok) {
+                        const rolesJson = await rolesRes.json();
+                        const rolesList = rolesJson.data || rolesJson || [];
+                        const searchId = String(fetchedUser.roleId || fetchedUser.role);
+                        const matchedRole = rolesList.find(r => String(r.id) === searchId);
+                        if (matchedRole) {
+                          nextRoleName = matchedRole.name;
+                        }
+                      }
+                    } catch (roleErr) {
+                      console.error('Failed to fetch roles list in Sidebar sync:', roleErr);
+                    }
+                  }
+                  
+                  if (!nextRoleName) {
+                    nextRoleName = fetchedUser.role === 'SUPER_ADMIN' ? 'Super Admin' : fetchedUser.role === 'ADMIN' ? 'Administrator' : userDataObj.roleName || fetchedUser.role;
+                  }
+
+                  if (userDataObj.name !== nextName || userDataObj.roleName !== nextRoleName) {
+                    userDataObj.name = nextName;
+                    userDataObj.roleName = nextRoleName;
+                    localStorage.setItem('userData', JSON.stringify(userDataObj));
+                    window.dispatchEvent(new Event('storage-update'));
+                  }
+                }
+              } catch (err) {
+                console.error('Failed to sync userData in polling loop:', err);
+              }
+            }
+          } catch (e) {
+            console.error('Failed to sync feature permissions:', e);
+            const savedFp = localStorage.getItem('scada_feature_permissions');
+            if (savedFp) localFp = JSON.parse(savedFp);
+          }
+        } else {
+          const savedFp = localStorage.getItem('scada_feature_permissions');
+          if (savedFp) localFp = JSON.parse(savedFp);
+        }
+
         const configEndpoint = isSuperAdmin ? '/api/super-admin/config' : '/api/super-admin/admin-config';
         const response = await fetch(configEndpoint);
         if (response.ok) {
@@ -54,17 +143,72 @@ const Sidebar = ({ collapsed }) => {
             showAC: 'AC'
           };
 
+          const isPowerUser = isSuperAdmin || isAdmin;
           const sidebarModules = {};
           Object.entries(moduleMap).forEach(([key, label]) => {
-            sidebarModules[label] = config[key];
+            let isEnabled = !!config[key];
+            if (isEnabled && !isPowerUser && localFp && Object.keys(localFp).length > 0) {
+              const readPerm = localFp[`${key}_read`] ?? localFp[key] ?? false;
+              isEnabled = !!readPerm;
+            }
+            sidebarModules[label] = isEnabled;
           });
 
-          setModulesConfig(sidebarModules);
-          setSubmodulesConfig(config.submoduleVisibility || {});
+          // Check if anything changed before writing to state or storage
+          const savedModules = localStorage.getItem('scada_modules_config');
+          const savedSubmodules = localStorage.getItem('scada_submodules_config');
+          const savedFp = localStorage.getItem('scada_feature_permissions');
+          
+          const nextModulesStr = JSON.stringify(sidebarModules);
+          const nextSubmodulesStr = JSON.stringify(config.submoduleVisibility || {});
+          const nextFpStr = JSON.stringify(localFp);
 
-          // Also update localStorage so it's ready for next reload
-          localStorage.setItem('scada_modules_config', JSON.stringify(sidebarModules));
-          localStorage.setItem('scada_submodules_config', JSON.stringify(config.submoduleVisibility || {}));
+          const modulesChanged = savedModules !== nextModulesStr;
+          const submodulesChanged = savedSubmodules !== nextSubmodulesStr;
+          const fpChanged = savedFp !== nextFpStr;
+
+          if (modulesChanged || submodulesChanged || fpChanged) {
+            if (modulesChanged) setModulesConfig(sidebarModules);
+            if (submodulesChanged) setSubmodulesConfig(config.submoduleVisibility || {});
+            
+            localStorage.setItem('scada_modules_config', nextModulesStr);
+            localStorage.setItem('scada_submodules_config', nextSubmodulesStr);
+            localStorage.setItem('scada_feature_permissions', nextFpStr);
+
+            // Notify other components and tabs
+            window.dispatchEvent(new Event('storage-update'));
+          }
+
+          // Route enforcement: if the current route has been disabled/revoked, redirect to dashboard
+          const currentPath = window.location.pathname;
+          const pathMap = {
+            '/water-management': 'Water Management',
+            '/motors': 'Motors',
+            '/dg-set': 'DG Set',
+            '/alarm-system': 'Alarm System',
+            '/lt-panel': 'LT Panel',
+            '/transformer': 'Transformer',
+            '/fire-pumps': 'Fire',
+            '/ticketing': 'Ticketing',
+            '/maintenance': 'Maintenance',
+            '/service': 'Service History',
+            '/dpr': 'Daily DPR',
+            '/energy-metering': 'Energy Metering',
+            '/VRV': 'VRV',
+            '/aqi-sensor': 'AQI Sensor',
+            '/hvac': 'HVAC',
+            '/ac': 'AC'
+          };
+
+          for (const [prefix, moduleName] of Object.entries(pathMap)) {
+            if (currentPath.startsWith(prefix)) {
+              if (sidebarModules[moduleName] === false) {
+                console.warn(`Access to ${moduleName} revoked. Redirecting to /dashboard...`);
+                window.location.href = '/dashboard';
+                break;
+              }
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to fetch sidebar config:', error);
@@ -73,7 +217,14 @@ const Sidebar = ({ collapsed }) => {
 
     fetchConfig();
 
-    const updateConfig = () => {
+    // Start polling to sync permissions in real-time
+    intervalId = setInterval(fetchConfig, 3000);
+
+    const updateConfig = (e) => {
+      // If triggered by a native storage event, filter key
+      if (e && e.key && e.key !== 'scada_modules_config' && e.key !== 'scada_submodules_config' && e.key !== 'scada_feature_permissions') {
+        return;
+      }
       const savedModules = localStorage.getItem('scada_modules_config');
       const savedSubmodules = localStorage.getItem('scada_submodules_config');
       if (savedModules) setModulesConfig(JSON.parse(savedModules));
@@ -81,8 +232,14 @@ const Sidebar = ({ collapsed }) => {
     };
 
     window.addEventListener('storage-update', updateConfig);
-    return () => window.removeEventListener('storage-update', updateConfig);
-  }, []);
+    window.addEventListener('storage', updateConfig);
+    
+    return () => {
+      window.removeEventListener('storage-update', updateConfig);
+      window.removeEventListener('storage', updateConfig);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isSuperAdmin, isAdmin]);
 
   const handleExitImpersonation = () => {
     const originalUser = localStorage.getItem('impersonator_backup_user');
@@ -328,7 +485,7 @@ const Sidebar = ({ collapsed }) => {
             </NavLink>
           )}
 
-          {(isAdmin || isSuperAdmin) && (
+          {showAdvancedSettings && (
             <Accordion className="sidebar-accordion">
               <Accordion.Item eventKey="admin-config" className="bg-transparent border-0">
                 <Accordion.Header className={`sidebar-link ${collapsed ? 'collapsed-header' : ''}`}>
@@ -352,6 +509,9 @@ const Sidebar = ({ collapsed }) => {
                     </NavLink>
                     <NavLink to="/admin/manage-areas" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
                       Area Management
+                    </NavLink>
+                    <NavLink to="/settings/system-users" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      System Users
                     </NavLink>
                     {(!modulesConfig || modulesConfig["Setting Templates"] !== false) && (
                       <NavLink to="/config/templates" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>

@@ -28,7 +28,11 @@ const moduleDetails = {
 
 const buildDefaultConfig = () => {
   const cfg = {};
-  Object.keys(moduleDetails).forEach(k => { cfg[k] = true; });
+  Object.keys(moduleDetails).forEach(k => {
+    cfg[`${k}_read`] = true;
+    cfg[`${k}_write`] = false;
+    cfg[k] = true;
+  });
   return cfg;
 };
 
@@ -191,8 +195,14 @@ const UserManagement = () => {
 
   const openEditModal = (user) => {
     const fp = user.featurePermissions || {};
-    const cfg = buildDefaultConfig();
-    Object.keys(moduleDetails).forEach(k => { if (fp[k] !== undefined) cfg[k] = fp[k] !== false; });
+    const cfg = {};
+    Object.keys(moduleDetails).forEach(k => {
+      const readVal = fp[`${k}_read`] !== undefined ? !!fp[`${k}_read`] : (fp[k] !== undefined ? !!fp[k] : true);
+      const writeVal = fp[`${k}_write`] !== undefined ? !!fp[`${k}_write`] : false;
+      cfg[`${k}_read`] = readVal;
+      cfg[`${k}_write`] = writeVal;
+      cfg[k] = readVal;
+    });
 
     const matchedRole = roles.find(r => String(r.id) === String(user.roleId || user.role?.id));
     const roleIdVal = user.role?.id || user.roleId || matchedRole?.id || '';
@@ -273,7 +283,13 @@ const UserManagement = () => {
     e.preventDefault();
     setSaving(true); setSaveError(null);
     const featurePermissions = {};
-    Object.keys(moduleDetails).forEach(k => { featurePermissions[k] = formConfig[k] !== false; });
+    Object.keys(moduleDetails).forEach(k => {
+      const readVal = !!formConfig[`${k}_read`];
+      const writeVal = !!formConfig[`${k}_write`];
+      featurePermissions[`${k}_read`] = readVal;
+      featurePermissions[`${k}_write`] = writeVal;
+      featurePermissions[k] = readVal;
+    });
     const siteId  = formData.siteId ? parseInt(formData.siteId, 10) : (sites.length > 0 ? sites[0].id : 1);
     const isEdit  = !!formData.id;
 
@@ -364,7 +380,7 @@ const UserManagement = () => {
       return matchesSearch && matchesRole && matchesStatus && matchesSync;
     }), [users, searchTerm, filterRole, filterStatus, filterSync, roles]);
 
-  const enabledCount = Object.keys(moduleDetails).filter(k => formConfig[k] !== false).length;
+  const enabledCount = Object.keys(moduleDetails).filter(k => formConfig[`${k}_read`] !== false).length;
   const totalMods    = Object.keys(moduleDetails).length;
   const colors       = ["#8C3B06", "#2A1206", "#0c0502", "#4a1c02"];
 
@@ -737,11 +753,25 @@ const UserManagement = () => {
                 <div className="d-flex align-items-center gap-2">
                   <span className="um-perm-count">{enabledCount}/{totalMods} enabled</span>
                   <button type="button" className="um-perm-all on"
-                    onClick={() => { const c = { ...formConfig }; Object.keys(moduleDetails).forEach(k => { c[k] = true; }); setFormConfig(c); }}>
+                    onClick={() => {
+                      const c = { ...formConfig };
+                      Object.keys(moduleDetails).forEach(k => {
+                        c[`${k}_read`] = true;
+                        c[`${k}_write`] = true;
+                      });
+                      setFormConfig(c);
+                    }}>
                     ALL ON
                   </button>
                   <button type="button" className="um-perm-all off"
-                    onClick={() => { const c = { ...formConfig }; Object.keys(moduleDetails).forEach(k => { c[k] = false; }); setFormConfig(c); }}>
+                    onClick={() => {
+                      const c = { ...formConfig };
+                      Object.keys(moduleDetails).forEach(k => {
+                        c[`${k}_read`] = false;
+                        c[`${k}_write`] = false;
+                      });
+                      setFormConfig(c);
+                    }}>
                     ALL OFF
                   </button>
                 </div>
@@ -750,28 +780,65 @@ const UserManagement = () => {
               {/* Grid */}
               <div className="um-perm-grid">
                 {Object.entries(moduleDetails).map(([key, mod]) => {
-                  const on = formConfig[key] !== false;
+                  const onRead = formConfig[`${key}_read`] !== false;
+                  const onWrite = !!formConfig[`${key}_write`];
                   return (
-                    <div key={key} className={`um-perm-card ${on ? 'on' : 'off'}`}
-                      onClick={() => setFormConfig({ ...formConfig, [key]: !on })}>
+                    <div key={key} className={`um-perm-card ${onRead ? 'on' : 'off'}`} style={{ cursor: 'default' }}>
                       <span className="um-perm-card-icon">{mod.icon}</span>
-                      <span className="um-perm-card-label">{mod.label}</span>
-                      {/* mini toggle */}
-                      <div className="um-mini-toggle">
-                        <div style={{
-                          width:'32px', height:'18px', borderRadius:'9px',
-                          background: on ? 'rgba(224,94,0,0.2)' : 'rgba(255,255,255,0.06)',
-                          border: `1.5px solid ${on ? 'rgba(224,94,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                          position:'relative', transition:'all 0.2s',
+                      <span className="um-perm-card-label" style={{ fontSize: '0.78rem' }}>{mod.label}</span>
+                      
+                      <div className="d-flex align-items-center gap-2" style={{ marginLeft: 'auto' }}>
+                        {/* Read Toggle */}
+                        <div className="d-flex align-items-center gap-1" style={{ cursor: 'pointer' }} onClick={() => {
+                          const nextRead = !onRead;
+                          setFormConfig({
+                            ...formConfig,
+                            [`${key}_read`]: nextRead,
+                            [`${key}_write`]: nextRead ? onWrite : false
+                          });
                         }}>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 800, color: onRead ? '#a78bfa' : '#475569' }}>R</span>
                           <div style={{
-                            width:'12px', height:'12px', borderRadius:'50%',
-                            background: on ? '#e05e00' : '#475569',
-                            position:'absolute', top:'2px',
-                            left: on ? '16px' : '2px',
-                            transition:'all 0.2s',
-                            boxShadow: on ? '0 0 6px rgba(224,94,0,0.7)' : 'none',
-                          }} />
+                            width:'26px', height:'14px', borderRadius:'7px',
+                            background: onRead ? 'rgba(224,94,0,0.2)' : 'rgba(255,255,255,0.06)',
+                            border: `1.2px solid ${onRead ? 'rgba(224,94,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                            position:'relative', transition:'all 0.2s',
+                          }}>
+                            <div style={{
+                              width:'8px', height:'8px', borderRadius:'50%',
+                              background: onRead ? '#e05e00' : '#475569',
+                              position:'absolute', top:'1.8px',
+                              left: onRead ? '14px' : '1.8px',
+                              transition:'all 0.2s',
+                              boxShadow: onRead ? '0 0 6px rgba(224,94,0,0.7)' : 'none',
+                            }} />
+                          </div>
+                        </div>
+
+                        {/* Write Toggle */}
+                        <div className={`d-flex align-items-center gap-1 ${!onRead ? 'disabled' : ''}`} style={{ cursor: onRead ? 'pointer' : 'not-allowed', opacity: onRead ? 1 : 0.35 }} onClick={() => {
+                          if (!onRead) return;
+                          setFormConfig({
+                            ...formConfig,
+                            [`${key}_write`]: !onWrite
+                          });
+                        }}>
+                          <span style={{ fontSize: '0.62rem', fontWeight: 800, color: onWrite ? '#a78bfa' : '#475569' }}>W</span>
+                          <div style={{
+                            width:'26px', height:'14px', borderRadius:'7px',
+                            background: onWrite ? 'rgba(224,94,0,0.2)' : 'rgba(255,255,255,0.06)',
+                            border: `1.2px solid ${onWrite ? 'rgba(224,94,0,0.5)' : 'rgba(255,255,255,0.1)'}`,
+                            position:'relative', transition:'all 0.2s',
+                          }}>
+                            <div style={{
+                              width:'8px', height:'8px', borderRadius:'50%',
+                              background: onWrite ? '#e05e00' : '#475569',
+                              position:'absolute', top:'1.8px',
+                              left: onWrite ? '14px' : '1.8px',
+                              transition:'all 0.2s',
+                              boxShadow: onWrite ? '0 0 6px rgba(224,94,0,0.7)' : 'none',
+                            }} />
+                          </div>
                         </div>
                       </div>
                     </div>

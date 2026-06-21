@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, Search, User, Bell, LayoutGrid, Sun } from 'lucide-react';
 import { Button, Form, InputGroup, Dropdown } from 'react-bootstrap';
 import { useTheme } from '../context/ThemeContext';
 
 const Header = ({ collapsed, toggleSidebar }) => {
   const { isDark, toggleTheme } = useTheme();
+
+  const [userData, setUserData] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('userData') || '{}');
+    } catch (e) {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      try {
+        setUserData(JSON.parse(localStorage.getItem('userData') || '{}'));
+      } catch (e) {}
+    };
+    window.addEventListener('storage-update', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('storage-update', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   return (
     <header className={`scada-header ${collapsed ? 'collapsed' : ''}`}>
@@ -60,13 +82,16 @@ const Header = ({ collapsed, toggleSidebar }) => {
               <User size={14} className="text-dark" />
             </div>
             <div className="user-info d-none d-sm-block text-start">
-              <p className="mb-0 text-white fw-bold" style={{ fontSize: '11px', lineHeight: '1.1' }}>
-                {localStorage.getItem('userRole')?.toUpperCase() === 'SUPER_ADMIN' ? 'Super Admin' : 
-                 localStorage.getItem('userRole')?.toLowerCase() === 'admin' ? 'Administrator' : 'Field User'}
+              <p className="mb-0 text-white fw-bold text-capitalize" style={{ fontSize: '11px', lineHeight: '1.1' }}>
+                {userData.name || 'User'}
               </p>
               <p className="mb-0 text-muted uppercase tracking-tighter" style={{ fontSize: '9px', lineHeight: '1.1' }}>
-                {localStorage.getItem('userRole')?.toUpperCase() === 'SUPER_ADMIN' ? 'Global Overseer' :
-                 localStorage.getItem('userRole')?.toLowerCase() === 'admin' ? 'System Engineer' : 'Operator'}
+                {userData.roleName || (() => {
+                  const role = localStorage.getItem('userRole') || 'USER';
+                  if (role === 'SUPER_ADMIN') return 'Super Admin';
+                  if (role === 'ADMIN') return 'Administrator';
+                  return role.replace(/_/g, ' ');
+                })()}
               </p>
             </div>
           </Dropdown.Toggle>
@@ -85,6 +110,7 @@ const Header = ({ collapsed, toggleSidebar }) => {
                 localStorage.removeItem('sochiot_token');
                 localStorage.removeItem('scada_modules_config');
                 localStorage.removeItem('scada_submodules_config');
+                localStorage.removeItem('scada_feature_permissions');
                 window.location.href = '/login';
               }}
             >

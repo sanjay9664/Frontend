@@ -11,6 +11,7 @@ import AlarmConfig from '../pages/AlarmSystem/AlarmConfig';
 import MessageTemplateSetting from '../pages/AlarmSystem/MessageTemplateSetting';
 import TransformerOverview from '../pages/Transformer/Overview';
 import Settings from '../pages/Settings/Settings';
+import SystemUsers from '../pages/Settings/SystemUsers';
 import AgTank from '../pages/WaterManagement/AgTank';
 import UgTank from '../pages/WaterManagement/UgTank';
 import MotorsOverview from '../pages/Motors/Overview';
@@ -102,7 +103,19 @@ const PlaceholderPage = ({ title }) => (
 );
 
 const AppRoutes = () => {
-  const userRole = localStorage.getItem('userRole');
+  const userRole = localStorage.getItem('userRole') || 'USER';
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const roleName = (userData.roleName || userRole || '').toLowerCase();
+
+  const isSuper = userRole === 'SUPER_ADMIN' || roleName.includes('super');
+  const isAdmin = userRole === 'ADMIN' || roleName.includes('admin');
+  const isOrgAdmin = roleName.includes('org') || roleName.includes('organisation') || roleName.includes('organization');
+  const isZone = roleName.includes('zone');
+  const isArea = roleName.includes('area');
+  const isLoc = roleName.includes('location');
+  const isUnit = roleName.includes('unit');
+
+  const showAdvancedSettings = isSuper || isAdmin || isOrgAdmin || isZone || isArea || isLoc || isUnit;
 
   return (
     <Routes>
@@ -164,6 +177,7 @@ const AppRoutes = () => {
 
       {/* Settings */}
       <Route path="/settings" element={<Settings />} />
+      <Route path="/settings/system-users" element={<SystemUsers />} />
 
       {/* Super Admin Routes */}
       <Route
@@ -176,7 +190,7 @@ const AppRoutes = () => {
       />
 
       {/* Admin / Super Admin Routes */}
-      {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
+      {showAdvancedSettings && (
         <>
           <Route path="/admin/manage-users" element={<UserManagement />} />
           <Route path="/admin/manage-devices" element={<DeviceManagement />} />

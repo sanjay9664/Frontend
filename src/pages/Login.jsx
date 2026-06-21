@@ -7,7 +7,7 @@ import heroImg from "./scada_hero.png";
 
 const Login = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
-  const [loginMode, setLoginMode] = useState('admin'); 
+  const [loginMode, setLoginMode] = useState('admin');
   const [credentials, setCredentials] = useState({ username: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -22,9 +22,9 @@ const Login = ({ onLoginSuccess }) => {
       const response = await fetch('https://app.sochiot.com/api/auth-engine/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: credentials.username, 
-          password: credentials.password 
+        body: JSON.stringify({
+          email: credentials.username,
+          password: credentials.password
         })
       });
 
@@ -46,7 +46,7 @@ const Login = ({ onLoginSuccess }) => {
               'Authorization': `Bearer ${token}`
             }
           });
-          
+
           if (meResponse.ok) {
             const meDataJson = await meResponse.json();
             meData = meDataJson.data || meDataJson || {};
@@ -77,7 +77,7 @@ const Login = ({ onLoginSuccess }) => {
         // Determine user role based on /me authorities, roles, isRootUser, or credentials
         let role = 'USER';
         const emailLower = credentials.username.toLowerCase();
-        
+
         const isSuper = (
           meData.isRootUser === true ||
           (meData.roles && meData.roles.includes('SUPER_ADMIN')) ||
@@ -108,6 +108,9 @@ const Login = ({ onLoginSuccess }) => {
           name: meData.name || meData.username || 'Super Admin',
           email: meData.email || credentials.username,
           role: role,
+          roleName: (meData.roles && meData.roles.length > 0 && meData.roles[0] !== 'ADMIN' && meData.roles[0] !== 'SUPER_ADMIN')
+            ? meData.roles[0]
+            : (meData.role?.name || meData.roleName || (role === 'SUPER_ADMIN' ? 'Super Admin' : role === 'ADMIN' ? 'Administrator' : role)),
           organizationId: meData.organizationId || null
         };
 
@@ -116,28 +119,29 @@ const Login = ({ onLoginSuccess }) => {
         localStorage.setItem('isAuthenticated', 'true');
 
         const localFp = meData.featurePermissions || {};
+        localStorage.setItem('scada_feature_permissions', JSON.stringify(localFp));
         const isSuperRole = role === 'SUPER_ADMIN';
         const sidebarMapping = {
-          "Dashboard": isSuperRole ? true : (localFp.showDashboard ?? true),
-          "Water Management": isSuperRole ? true : (localFp.showWaterManagement ?? true),
-          "Motors": isSuperRole ? true : (localFp.showMotors ?? true),
-          "DG Set": isSuperRole ? true : (localFp.showDGSet ?? true),
-          "Setting Templates": isSuperRole ? true : (localFp.showSettingTemplates ?? true),
-          "Alarm System": isSuperRole ? true : (localFp.showAlarms ?? true),
-          "LT Panel": isSuperRole ? true : (localFp.showLTPanel ?? true),
-          "Transformer": isSuperRole ? true : (localFp.showTransformers ?? true),
-          "Fire": isSuperRole ? true : (localFp.showFirePumps ?? true),
-          "Ticketing": isSuperRole ? true : (localFp.showTicketing ?? true),
-          "Maintenance": isSuperRole ? true : (localFp.showMaintenance ?? true),
-          "Service History": isSuperRole ? true : (localFp.showServiceHistory ?? true),
-          "Daily DPR": isSuperRole ? true : (localFp.showDailyDPR ?? true),
-          "Energy Metering": isSuperRole ? true : (localFp.showEnergyMetering ?? true)
+          "Dashboard": isSuperRole ? true : (localFp.showDashboard_read ?? localFp.showDashboard ?? true),
+          "Water Management": isSuperRole ? true : (localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? true),
+          "Motors": isSuperRole ? true : (localFp.showMotors_read ?? localFp.showMotors ?? true),
+          "DG Set": isSuperRole ? true : (localFp.showDGSet_read ?? localFp.showDGSet ?? true),
+          "Setting Templates": isSuperRole ? true : (localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? true),
+          "Alarm System": isSuperRole ? true : (localFp.showAlarms_read ?? localFp.showAlarms ?? true),
+          "LT Panel": isSuperRole ? true : (localFp.showLTPanel_read ?? localFp.showLTPanel ?? true),
+          "Transformer": isSuperRole ? true : (localFp.showTransformers_read ?? localFp.showTransformers ?? true),
+          "Fire": isSuperRole ? true : (localFp.showFirePumps_read ?? localFp.showFirePumps ?? true),
+          "Ticketing": isSuperRole ? true : (localFp.showTicketing_read ?? localFp.showTicketing ?? true),
+          "Maintenance": isSuperRole ? true : (localFp.showMaintenance_read ?? localFp.showMaintenance ?? true),
+          "Service History": isSuperRole ? true : (localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? true),
+          "Daily DPR": isSuperRole ? true : (localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? true),
+          "Energy Metering": isSuperRole ? true : (localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? true)
         };
         localStorage.setItem('scada_modules_config', JSON.stringify(sidebarMapping));
         localStorage.setItem('scada_submodules_config', JSON.stringify(localFp.submoduleVisibility || {}));
-        
+
         window.dispatchEvent(new Event('storage-update'));
-        
+
         // Trigger splash screen FIRST, then navigate after one frame
         if (onLoginSuccess) onLoginSuccess();
 
@@ -166,110 +170,113 @@ const Login = ({ onLoginSuccess }) => {
       <div className="login-hero-side d-none d-lg-flex position-relative flex-column justify-content-between p-5">
         <div className="hero-grid-overlay"></div>
         <img src={heroImg} alt="SCADA AI" className="hero-bg-img" />
-        
+
         <div className="position-relative z-10 w-100">
           <div className="d-flex align-items-center gap-3 mb-5">
-             <div className="bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-10 backdrop-blur">
-                <img src={logo} alt="TRUEiSENSE" style={{ height: 40 }} />
-             </div>
-             <div className="h-line-scada flex-grow-1 opacity-25"></div>
+            <div className="bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-10 backdrop-blur">
+              <img src={logo} alt="TRUEiSENSE" style={{ height: 40 }} />
+            </div>
+            <div className="h-line-scada flex-grow-1 opacity-25"></div>
           </div>
 
           <div className="hero-main-text">
             <h1 className="display-4 fw-black text-white mb-3 tracking-tighter">
-                THE FUTURE OF <span className="text-info-scada">AUTOMATION</span>
+              THE FUTURE OF <span className="text-info-scada">AUTOMATION</span>
             </h1>
             <p className="fs-5 text-white text-opacity-75 fw-bold max-w-sm">
-                Unifying industrial intelligence with next-gen HMI visualization. Real-time, Secure, and Scalable.
+              Unifying industrial intelligence with next-gen HMI visualization. Real-time, Secure, and Scalable.
             </p>
           </div>
         </div>
 
         <div className="position-relative z-10">
-            <div className="d-flex gap-4 mb-5">
-                {[
-                    {icon: <Cpu size={20} />, label: 'Edge Core v2'},
-                    {icon: <Globe size={20} />, label: 'Global Sync'},
-                    {icon: <Shield size={20} />, label: 'End-to-End Encryption'}
-                ].map((feat, i) => (
-                    <div key={i} className="d-flex align-items-center gap-2 bg-black bg-opacity-40 p-2 px-3 rounded-pill border border-white border-opacity-10 backdrop-blur">
-                        <div className="text-info-scada">{feat.icon}</div>
-                        <small className="text-white fw-bold fs-13 uppercase">{feat.label}</small>
-                    </div>
-                ))}
-            </div>
-            <div className="text-white text-opacity-25 fs-13 fw-bold tracking-widest uppercase">
-                © 2026 TRUEiSENSE AUTOMATION PVT. LTD. ALL NODES ENCRYPTED.
-            </div>
+          <div className="d-flex gap-4 mb-5">
+            {[
+              { icon: <Cpu size={20} />, label: 'Edge Core v2' },
+              { icon: <Globe size={20} />, label: 'Global Sync' },
+              { icon: <Shield size={20} />, label: 'End-to-End Encryption' }
+            ].map((feat, i) => (
+              <div key={i} className="d-flex align-items-center gap-2 bg-black bg-opacity-40 p-2 px-3 rounded-pill border border-white border-opacity-10 backdrop-blur">
+                <div className="text-info-scada">{feat.icon}</div>
+                <small className="text-white fw-bold fs-13 uppercase">{feat.label}</small>
+              </div>
+            ))}
+          </div>
+          <div className="d-flex align-items-center justify-content-center gap-2 text-white text-opacity-30 fs-12 fw-bold tracking-widest uppercase" style={{ letterSpacing: '0.15em' }}>
+             <span style={{ color: '#fb923c', fontWeight: 950 }}>SOCHIOT INNOVATIONS</span>
+             <span style={{ color: 'rgba(255, 255, 255, 0.15)' }}>|</span>
+             <span>© 2026</span>
+          </div>
         </div>
       </div>
 
       {/* RIGHT SIDE: AUTHENTICATION GATEWAY */}
       <div className="login-form-side flex-grow-1 d-flex align-items-center justify-content-center p-4">
-          <div className="login-form-container w-100" style={{ maxWidth: '440px' }}>
-            <div className="text-center mb-5">
-                 <img src={logo} alt="TRUEiSENSE" className="mb-4" style={{ height: 60 }} />
+        <div className="login-form-container w-100" style={{ maxWidth: '440px' }}>
+          <div className="text-center mb-5">
+            <img src={logo} alt="TRUEiSENSE" className="mb-4" style={{ height: 60 }} />
+          </div>
+
+          {error && (
+            <Alert variant="danger" className="text-center border-0 bg-danger bg-opacity-10 text-danger fs-12 uppercase fw-bold mb-4 rounded-3 p-3">
+              <Shield size={16} className="me-2" /> {error}
+            </Alert>
+          )}
+
+          <Form onSubmit={handleLogin}>
+            <div className="fade-in">
+              <Form.Group className="mb-4 position-relative">
+                <div className="input-icon-v3"><Mail size={18} /></div>
+                <Form.Control
+                  type="email"
+                  placeholder={loginMode === 'admin' ? "admin@trueisense.com" : "user@trueisense.com"}
+                  className={`scada-input-v3 ${loginMode === 'user' ? 'border-user-v3' : ''}`}
+                  value={credentials.username}
+                  onChange={(e) => setCredentials({ ...credentials, username: e.target.value })}
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-5 position-relative">
+                <div className="input-icon-v3"><Key size={18} /></div>
+                <Form.Control
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className={`scada-input-v3 ${loginMode === 'user' ? 'border-user-v3' : ''}`}
+                  value={credentials.password}
+                  onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                  required
+                  style={{ paddingRight: '50px' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent text-muted px-3"
+                  style={{ zIndex: 10, cursor: 'pointer' }}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </Form.Group>
             </div>
 
-            {error && (
-                <Alert variant="danger" className="text-center border-0 bg-danger bg-opacity-10 text-danger fs-12 uppercase fw-bold mb-4 rounded-3 p-3">
-                <Shield size={16} className="me-2" /> {error}
-                </Alert>
-            )}
-
-            <Form onSubmit={handleLogin}>
-                <div className="fade-in">
-                    <Form.Group className="mb-4 position-relative">
-                    <div className="input-icon-v3"><Mail size={18} /></div>
-                    <Form.Control 
-                        type="email" 
-                        placeholder={loginMode === 'admin' ? "admin@trueisense.com" : "user@trueisense.com"}
-                        className={`scada-input-v3 ${loginMode === 'user' ? 'border-user-v3' : ''}`}
-                        value={credentials.username}
-                        onChange={(e) => setCredentials({...credentials, username: e.target.value})}
-                        required
-                    />
-                    </Form.Group>
-                    <Form.Group className="mb-5 position-relative">
-                    <div className="input-icon-v3"><Key size={18} /></div>
-                    <Form.Control 
-                        type={showPassword ? "text" : "password"} 
-                        placeholder="••••••••" 
-                        className={`scada-input-v3 ${loginMode === 'user' ? 'border-user-v3' : ''}`}
-                        value={credentials.password}
-                        onChange={(e) => setCredentials({...credentials, password: e.target.value})}
-                        required
-                        style={{ paddingRight: '50px' }}
-                    />
-                    <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent text-muted px-3"
-                        style={{ zIndex: 10, cursor: 'pointer' }}
-                    >
-                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                    </Form.Group>
+            <Button
+              disabled={loading}
+              type="submit"
+              className={`w-100 py-3 rounded-3 fw-black uppercase tracking-widest transition-all border-0 shadow-lg d-flex align-items-center justify-content-center gap-3 ${loginMode === 'admin' ? 'login-btn-admin-v3' : 'login-btn-user-v3'}`}
+            >
+              {loading ? (
+                <div className="d-flex align-items-center gap-3">
+                  <span className="spinner-border spinner-border-sm"></span> INTEGRATING
                 </div>
-
-                <Button 
-                disabled={loading}
-                type="submit" 
-                className={`w-100 py-3 rounded-3 fw-black uppercase tracking-widest transition-all border-0 shadow-lg d-flex align-items-center justify-content-center gap-3 ${loginMode === 'admin' ? 'login-btn-admin-v3' : 'login-btn-user-v3'}`}
-                >
-                {loading ? (
-                    <div className="d-flex align-items-center gap-3">
-                    <span className="spinner-border spinner-border-sm"></span> INTEGRATING
-                    </div>
-                ) : (
-                    <> {loginMode === 'admin' ? 'INITIALIZE ENGINE' : 'REMOTELY ACCESS'} <ArrowRight size={20} /> </>
-                )}
-                </Button>
-            </Form>
-          </div>
+              ) : (
+                <> {loginMode === 'admin' ? 'Login' : 'REMOTELY ACCESS'} <ArrowRight size={20} /> </>
+              )}
+            </Button>
+          </Form>
+        </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         .login-split-wrapper {
           width: 100vw;
           min-height: 100vh;
