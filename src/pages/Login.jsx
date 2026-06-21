@@ -121,21 +121,27 @@ const Login = ({ onLoginSuccess }) => {
         const localFp = meData.featurePermissions || {};
         localStorage.setItem('scada_feature_permissions', JSON.stringify(localFp));
         const isSuperRole = role === 'SUPER_ADMIN';
+        const isOperator = role?.toLowerCase().includes('operator');
+
         const sidebarMapping = {
-          "Dashboard": isSuperRole ? true : (localFp.showDashboard_read ?? localFp.showDashboard ?? true),
-          "Water Management": isSuperRole ? true : (localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? true),
-          "Motors": isSuperRole ? true : (localFp.showMotors_read ?? localFp.showMotors ?? true),
-          "DG Set": isSuperRole ? true : (localFp.showDGSet_read ?? localFp.showDGSet ?? true),
-          "Setting Templates": isSuperRole ? true : (localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? true),
-          "Alarm System": isSuperRole ? true : (localFp.showAlarms_read ?? localFp.showAlarms ?? true),
-          "LT Panel": isSuperRole ? true : (localFp.showLTPanel_read ?? localFp.showLTPanel ?? true),
-          "Transformer": isSuperRole ? true : (localFp.showTransformers_read ?? localFp.showTransformers ?? true),
-          "Fire": isSuperRole ? true : (localFp.showFirePumps_read ?? localFp.showFirePumps ?? true),
-          "Ticketing": isSuperRole ? true : (localFp.showTicketing_read ?? localFp.showTicketing ?? true),
-          "Maintenance": isSuperRole ? true : (localFp.showMaintenance_read ?? localFp.showMaintenance ?? true),
-          "Service History": isSuperRole ? true : (localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? true),
-          "Daily DPR": isSuperRole ? true : (localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? true),
-          "Energy Metering": isSuperRole ? true : (localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? true)
+          "Dashboard": isSuperRole ? true : (isOperator ? (localFp.showDashboard_read ?? localFp.showDashboard ?? false) : true),
+          "Water Management": isSuperRole ? true : (isOperator ? (localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false) : true),
+          "Motors": isSuperRole ? true : (isOperator ? (localFp.showMotors_read ?? localFp.showMotors ?? false) : true),
+          "DG Set": isSuperRole ? true : (isOperator ? (localFp.showDGSet_read ?? localFp.showDGSet ?? false) : true),
+          "Setting Templates": isSuperRole ? true : (isOperator ? (localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false) : true),
+          "Alarm System": isSuperRole ? true : (isOperator ? (localFp.showAlarms_read ?? localFp.showAlarms ?? false) : true),
+          "LT Panel": isSuperRole ? true : (isOperator ? (localFp.showLTPanel_read ?? localFp.showLTPanel ?? false) : true),
+          "Transformer": isSuperRole ? true : (isOperator ? (localFp.showTransformers_read ?? localFp.showTransformers ?? false) : true),
+          "Fire": isSuperRole ? true : (isOperator ? (localFp.showFirePumps_read ?? localFp.showFirePumps ?? false) : true),
+          "Ticketing": isSuperRole ? true : (isOperator ? (localFp.showTicketing_read ?? localFp.showTicketing ?? false) : true),
+          "Maintenance": isSuperRole ? true : (isOperator ? (localFp.showMaintenance_read ?? localFp.showMaintenance ?? false) : true),
+          "Service History": isSuperRole ? true : (isOperator ? (localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false) : true),
+          "Daily DPR": isSuperRole ? true : (isOperator ? (localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false) : true),
+          "Energy Metering": isSuperRole ? true : (isOperator ? (localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false) : true),
+          "VRV": isSuperRole ? true : (isOperator ? (localFp.showVRV_read ?? localFp.showVRV ?? false) : true),
+          "AQI Sensor": isSuperRole ? true : (isOperator ? (localFp.showAQISensor_read ?? localFp.showAQISensor ?? false) : true),
+          "HVAC": isSuperRole ? true : (isOperator ? (localFp.showHVAC_read ?? localFp.showHVAC ?? false) : true),
+          "AC": isSuperRole ? true : (isOperator ? (localFp.showAC_read ?? localFp.showAC ?? false) : true)
         };
         localStorage.setItem('scada_modules_config', JSON.stringify(sidebarMapping));
         localStorage.setItem('scada_submodules_config', JSON.stringify(localFp.submoduleVisibility || {}));

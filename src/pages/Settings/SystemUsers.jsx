@@ -327,6 +327,7 @@ const AdministratorUserTab = () => {
   };
 
   const buildLocationTreeFromOrg = (org) => {
+    console.log('DEBUG buildLocationTreeFromOrg roleKey:', form.roleKey);
     if (!org) return [];
 
     const parseLocation = (loc) => ({
@@ -339,12 +340,15 @@ const AdministratorUserTab = () => {
 
     const parseZone = (zone) => {
       const children = [];
-      if (Array.isArray(zone.subZones)) {
+      const isZoneManager = form.roleKey === 'zone_manager';
+      const hideLocations = form.roleKey === 'area_manager' || form.roleKey === 'location_manager' || form.roleKey === 'unit_head';
+
+      if (!isZoneManager && Array.isArray(zone.subZones)) {
         zone.subZones.forEach(sub => {
           children.push(parseZone(sub));
         });
       }
-      if (Array.isArray(zone.locations)) {
+      if (!isZoneManager && !hideLocations && Array.isArray(zone.locations)) {
         zone.locations.forEach(loc => {
           children.push(parseLocation(loc));
         });
@@ -402,7 +406,7 @@ const AdministratorUserTab = () => {
 
   const orgTree = useMemo(() => {
     return buildLocationTreeFromOrg(selectedOrgDetails);
-  }, [selectedOrgDetails]);
+  }, [selectedOrgDetails, form.roleKey]);
 
   const getSelectedNodes = (tree, checkedState) => {
     let selectedMap = {};

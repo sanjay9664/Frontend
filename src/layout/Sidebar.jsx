@@ -144,12 +144,15 @@ const Sidebar = ({ collapsed }) => {
           };
 
           const isPowerUser = isSuperAdmin || isAdmin;
+          const isOperator = roleName.includes('operator');
           const sidebarModules = {};
           Object.entries(moduleMap).forEach(([key, label]) => {
             let isEnabled = !!config[key];
-            if (isEnabled && !isPowerUser && localFp && Object.keys(localFp).length > 0) {
-              const readPerm = localFp[`${key}_read`] ?? localFp[key] ?? false;
-              isEnabled = !!readPerm;
+            if (isEnabled) {
+              if (isOperator) {
+                const readPerm = localFp[`${key}_read`] ?? localFp[key] ?? false;
+                isEnabled = !!readPerm;
+              }
             }
             sidebarModules[label] = isEnabled;
           });
