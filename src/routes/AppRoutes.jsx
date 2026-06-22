@@ -21,6 +21,7 @@ import SuperAdminConfig from '../pages/SuperAdmin/SuperAdminConfig';
 import SiteManagement from '../pages/SuperAdmin/SiteManagement';
 import UserManagement from '../pages/Admin/UserManagement';
 import DeviceManagement from '../pages/Admin/DeviceManagement';
+import DeviceRegistration from '../pages/Admin/DeviceRegistration';
 import AreaManagement from '../pages/Admin/AreaManagement';
 import MaintenancePage from '../pages/Maintenance/Index';
 
@@ -206,6 +207,7 @@ const AppRoutes = () => {
           <Route path="/config/templates" element={<ConfigTemplates />} />
           <Route path="/admin/manage-users" element={<UserManagement />} />
           <Route path="/admin/manage-devices" element={<DeviceManagement />} />
+          <Route path="/admin/register-device" element={<DeviceRegistration />} />
           <Route path="/admin/manage-areas" element={<AreaManagement />} />
         </>
       )}

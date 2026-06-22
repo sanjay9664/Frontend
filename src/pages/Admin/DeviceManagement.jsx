@@ -4,6 +4,7 @@ import {
   Plus, Trash2, Save, Search, Settings, RefreshCw, X, CheckCircle,
   Activity, Zap, Database, Droplets, Flame, Sliders, ShieldAlert, ChevronDown
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 
 /* ─────────────────────── category map / details ─────────────────────── */
@@ -83,6 +84,7 @@ const FilterSelect = ({ value, onChange, disabled, children }) => {
 };
 
 const DeviceManagement = () => {
+  const navigate = useNavigate();
   /* ── tab state ── */
   const [activeTab, setActiveTab] = useState('devices'); // 'devices', 'profiles', 'energyGroups', 'templates'
   const [modalTab, setModalTab] = useState('info'); // 'info', 'settings'
@@ -939,7 +941,7 @@ const DeviceManagement = () => {
                `${templates.length} Templates`}
             </span>
             {activeTab === 'devices' && (
-              <button className="um-btn-primary" onClick={openCreateModal}>
+              <button className="um-btn-primary" onClick={() => navigate('/admin/register-device')}>
                 <Plus size={15} className="me-2" />
                 Register Device
               </button>
