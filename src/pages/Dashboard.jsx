@@ -4,7 +4,7 @@ import {
   Zap, Droplets, Database, ShieldAlert, Activity,
   TrendingUp, Clock, AlertTriangle, CheckCircle2,
   ChevronRight, ArrowUpRight, ArrowDownRight, LayoutPanelTop,
-  Gauge, Thermometer, Battery, Wind, Globe, Cpu, Network
+  Gauge, Thermometer, Battery, Wind, Globe, Cpu, Network, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -32,9 +32,42 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const modulesConfig = useMemo(() => {
+    const saved = localStorage.getItem('scada_modules_config');
+    return saved ? JSON.parse(saved) : null;
+  }, []);
+
   const StatusCard = ({ title, value, unit, icon, color, trend, trendValue, path }) => {
+    const isAllowed = useMemo(() => {
+      if (!path) return true;
+      const pathMap = {
+        '/water-management': 'Water Management',
+        '/motors': 'Motors',
+        '/dg-set': 'DG Set',
+        '/alarm-system': 'Alarm System',
+        '/lt-panel': 'LT Panel',
+        '/transformer': 'Transformer',
+        '/fire-pumps': 'Fire',
+        '/ticketing': 'Ticketing',
+        '/maintenance': 'Maintenance',
+        '/service': 'Service History',
+        '/dpr': 'Daily DPR',
+        '/energy-metering': 'Energy Metering',
+        '/VRV': 'VRV',
+        '/aqi-sensor': 'AQI Sensor',
+        '/hvac': 'HVAC',
+        '/ac': 'AC'
+      };
+      
+      const entry = Object.entries(pathMap).find(([prefix]) => path.startsWith(prefix));
+      if (entry && modulesConfig) {
+        return modulesConfig[entry[1]] !== false;
+      }
+      return true;
+    }, [path]);
+
     const handleNavigate = () => {
-      if (!path) return; // Disable navigation if path is null
+      if (!path || !isAllowed) return; // Disable navigation
       const userRole = (localStorage.getItem('userRole') || 'user').toUpperCase();
       if (path === '/settings' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
         return;
@@ -45,8 +78,11 @@ const Dashboard = () => {
     return (
       <Card
         onClick={handleNavigate}
-        className="dash-card h-100 border-0 shadow-lg cursor-pointer transition-all overflow-hidden position-relative"
-        style={{ background: 'linear-gradient(145deg, #0f172a 0%, #020617 100%)' }}
+        className={`dash-card h-100 border-0 shadow-lg transition-all overflow-hidden position-relative ${!isAllowed ? 'opacity-50' : 'cursor-pointer'}`}
+        style={{ 
+          background: 'linear-gradient(145deg, #0f172a 0%, #020617 100%)',
+          cursor: isAllowed ? 'pointer' : 'not-allowed'
+        }}
       >
         <div className={`card-accent-line bg-${color}`}></div>
         <Card.Body className="p-4">
@@ -54,7 +90,15 @@ const Dashboard = () => {
             <div className={`icon-box bg-${color} bg-opacity-10 text-${color} border border-${color} border-opacity-20`}>
               {icon}
             </div>
-            {trend && (
+            {!isAllowed && (
+              <Badge bg="secondary" className="bg-opacity-10 text-white rounded-pill px-2 border-0">
+                <div className="d-flex align-items-center gap-1">
+                  <Lock size={12} className="text-secondary" />
+                  LOCKED
+                </div>
+              </Badge>
+            )}
+            {isAllowed && trend && (
               <Badge bg={trend === 'up' ? 'success' : 'danger'} className="bg-opacity-10 text-opacity-100 rounded-pill px-2 border-0">
                 <div className="d-flex align-items-center gap-1">
                   {trend === 'up' ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
@@ -73,7 +117,7 @@ const Dashboard = () => {
               <span className="scada-static-dot bg-success"></span>
               <small className="text-muted fs-12 fw-black tracking-widest">LIVE DATA</small>
             </div>
-            <ChevronRight size={14} className="text-muted opacity-25" />
+            {isAllowed ? <ChevronRight size={14} className="text-muted opacity-25" /> : <Lock size={12} className="text-muted opacity-25" />}
           </div>
         </Card.Body>
       </Card>
@@ -228,23 +272,32 @@ const Dashboard = () => {
                 { label: 'Humidity', val: '58', unit: '%', icon: <Wind size={18} />, color: '#0ea5e9', status: 'NORMAL' },
                 { label: 'CO2', val: '', unit: '', icon: <Battery size={18} />, color: '#22c55e', status: 'FULL' },
                 { label: 'TVOC', val: '', unit: '', icon: <Activity size={18} />, color: '#f59e0b', status: 'WARN' }
-              ].map((s, i) => (
-                <div 
-                  key={i} 
-                  className="sensor-tile-static p-3 mb-3 bg-black bg-opacity-30 rounded-4 border border-white border-opacity-5 cursor-pointer"
-                  onClick={() => navigate('/aqi-sensor/temp-humidity')}
-                  style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)'}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'}
-                >
-                  <div className="d-flex justify-content-between align-items-start mb-2">
-                    <div className="p-1 rounded-circle bg-white bg-opacity-5" style={{ color: s.color }}>{s.icon}</div>
-                    <Badge style={{ background: `${s.color}22`, color: s.color, border: `1px solid ${s.color}44` }} className="fs-12 fw-black tracking-widest">{s.status}</Badge>
+              ].map((s, i) => {
+                const aqiAllowed = !modulesConfig || modulesConfig["AQI Sensor"] !== false;
+                return (
+                  <div 
+                    key={i} 
+                    className={`sensor-tile-static p-3 mb-3 bg-black bg-opacity-30 rounded-4 border border-white border-opacity-5 ${aqiAllowed ? 'cursor-pointer' : 'opacity-50'}`}
+                    onClick={() => { if (aqiAllowed) navigate('/aqi-sensor/temp-humidity'); }}
+                    style={{ 
+                      transition: 'all 0.2s ease', 
+                      cursor: aqiAllowed ? 'pointer' : 'not-allowed'
+                    }}
+                    onMouseEnter={(e) => { if (aqiAllowed) e.currentTarget.style.borderColor = 'rgba(14, 165, 233, 0.5)'; }}
+                    onMouseLeave={(e) => { if (aqiAllowed) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'; }}
+                  >
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div className="p-1 rounded-circle bg-white bg-opacity-5" style={{ color: s.color }}>{s.icon}</div>
+                      <div className="d-flex align-items-center gap-2">
+                        {!aqiAllowed && <Lock size={12} className="text-secondary" />}
+                        <Badge style={{ background: `${s.color}22`, color: s.color, border: `1px solid ${s.color}44` }} className="fs-12 fw-black tracking-widest">{s.status}</Badge>
+                      </div>
+                    </div>
+                    <small className="text-secondary fw-bold fs-12 uppercase d-block mb-1">{s.label}</small>
+                    <h4 className="text-white fw-black mb-0 font-monospace">{s.val}<small className="fs-13 opacity-50 ms-1">{s.unit}</small></h4>
                   </div>
-                  <small className="text-secondary fw-bold fs-12 uppercase d-block mb-1">{s.label}</small>
-                  <h4 className="text-white fw-black mb-0 font-monospace">{s.val}<small className="fs-13 opacity-50 ms-1">{s.unit}</small></h4>
-                </div>
-              ))}
+                );
+              })}
             </Card.Body>
             <div className="p-4 bg-black bg-opacity-50 text-center border-top border-white border-opacity-5">
               <Network size={20} className="text-info mb-2" />

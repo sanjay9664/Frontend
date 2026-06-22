@@ -118,30 +118,63 @@ const Login = ({ onLoginSuccess }) => {
         localStorage.setItem('userData', JSON.stringify(userObj));
         localStorage.setItem('isAuthenticated', 'true');
 
-        const localFp = meData.featurePermissions || {};
+        let localFp = meData.featurePermissions || {};
+
+        // If featurePermissions is empty, try fetching via user list endpoint
+        // This covers Global Scope users where the backend siteId is null
+        if (Object.keys(localFp).length === 0) {
+          const rn = (meData.roleName || meData.role?.name || role || '').toLowerCase();
+          const isRestricted = rn.includes('zone') || rn.includes('area') || rn.includes('location') || rn.includes('unit') || rn.includes('operator');
+          const userEmail = meData.email || credentials.username;
+          const userId = meData.id || meData._id;
+          if (isRestricted && (userEmail || userId)) {
+            try {
+              const searchParam = userEmail ? `?search=${encodeURIComponent(userEmail)}&pageSize=5` : `?pageSize=100`;
+              const userListRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users${searchParam}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (userListRes.ok) {
+                const listJson = await userListRes.json();
+                const usersList = listJson.data || listJson || [];
+                const myId = String(userId);
+                const myEmail = (userEmail || '').toLowerCase();
+                const matched = Array.isArray(usersList)
+                  ? usersList.find(u => String(u.sochiotUserId) === myId || String(u.id) === myId || (u.email || '').toLowerCase() === myEmail)
+                  : null;
+                if (matched?.featurePermissions && Object.keys(matched.featurePermissions).length > 0) {
+                  localFp = matched.featurePermissions;
+                }
+              }
+            } catch (fallbackErr) {
+              console.warn('Fallback user list fetch for featurePermissions failed:', fallbackErr);
+            }
+          }
+        }
+
         localStorage.setItem('scada_feature_permissions', JSON.stringify(localFp));
         const isSuperRole = role === 'SUPER_ADMIN';
-        const isOperator = role?.toLowerCase().includes('operator');
+        const roleNameStr = (meData.roleName || meData.role?.name || role).toLowerCase();
+        const isRestrictedRole = roleNameStr.includes('zone') || roleNameStr.includes('area') || roleNameStr.includes('location') || roleNameStr.includes('unit') || roleNameStr.includes('operator');
 
         const sidebarMapping = {
-          "Dashboard": isSuperRole ? true : (isOperator ? (localFp.showDashboard_read ?? localFp.showDashboard ?? false) : true),
-          "Water Management": isSuperRole ? true : (isOperator ? (localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false) : true),
-          "Motors": isSuperRole ? true : (isOperator ? (localFp.showMotors_read ?? localFp.showMotors ?? false) : true),
-          "DG Set": isSuperRole ? true : (isOperator ? (localFp.showDGSet_read ?? localFp.showDGSet ?? false) : true),
-          "Setting Templates": isSuperRole ? true : (isOperator ? (localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false) : true),
-          "Alarm System": isSuperRole ? true : (isOperator ? (localFp.showAlarms_read ?? localFp.showAlarms ?? false) : true),
-          "LT Panel": isSuperRole ? true : (isOperator ? (localFp.showLTPanel_read ?? localFp.showLTPanel ?? false) : true),
-          "Transformer": isSuperRole ? true : (isOperator ? (localFp.showTransformers_read ?? localFp.showTransformers ?? false) : true),
-          "Fire": isSuperRole ? true : (isOperator ? (localFp.showFirePumps_read ?? localFp.showFirePumps ?? false) : true),
-          "Ticketing": isSuperRole ? true : (isOperator ? (localFp.showTicketing_read ?? localFp.showTicketing ?? false) : true),
-          "Maintenance": isSuperRole ? true : (isOperator ? (localFp.showMaintenance_read ?? localFp.showMaintenance ?? false) : true),
-          "Service History": isSuperRole ? true : (isOperator ? (localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false) : true),
-          "Daily DPR": isSuperRole ? true : (isOperator ? (localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false) : true),
-          "Energy Metering": isSuperRole ? true : (isOperator ? (localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false) : true),
-          "VRV": isSuperRole ? true : (isOperator ? (localFp.showVRV_read ?? localFp.showVRV ?? false) : true),
-          "AQI Sensor": isSuperRole ? true : (isOperator ? (localFp.showAQISensor_read ?? localFp.showAQISensor ?? false) : true),
-          "HVAC": isSuperRole ? true : (isOperator ? (localFp.showHVAC_read ?? localFp.showHVAC ?? false) : true),
-          "AC": isSuperRole ? true : (isOperator ? (localFp.showAC_read ?? localFp.showAC ?? false) : true)
+          "Dashboard": isSuperRole ? true : (isRestrictedRole ? (localFp.showDashboard_read ?? localFp.showDashboard ?? false) : true),
+          "Water Management": isSuperRole ? true : (isRestrictedRole ? (localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false) : true),
+          "Motors": isSuperRole ? true : (isRestrictedRole ? (localFp.showMotors_read ?? localFp.showMotors ?? false) : true),
+          "DG Set": isSuperRole ? true : (isRestrictedRole ? (localFp.showDGSet_read ?? localFp.showDGSet ?? false) : true),
+          "Setting Templates": isSuperRole ? true : (isRestrictedRole ? (localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false) : true),
+          "Alarm System": isSuperRole ? true : (isRestrictedRole ? (localFp.showAlarms_read ?? localFp.showAlarms ?? false) : true),
+          "LT Panel": isSuperRole ? true : (isRestrictedRole ? (localFp.showLTPanel_read ?? localFp.showLTPanel ?? false) : true),
+          "Transformer": isSuperRole ? true : (isRestrictedRole ? (localFp.showTransformers_read ?? localFp.showTransformers ?? false) : true),
+          "Fire": isSuperRole ? true : (isRestrictedRole ? (localFp.showFirePumps_read ?? localFp.showFirePumps ?? false) : true),
+          "Ticketing": isSuperRole ? true : (isRestrictedRole ? (localFp.showTicketing_read ?? localFp.showTicketing ?? false) : true),
+          "Maintenance": isSuperRole ? true : (isRestrictedRole ? (localFp.showMaintenance_read ?? localFp.showMaintenance ?? false) : true),
+          "Service History": isSuperRole ? true : (isRestrictedRole ? (localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false) : true),
+          "Daily DPR": isSuperRole ? true : (isRestrictedRole ? (localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false) : true),
+          "Energy Metering": isSuperRole ? true : (isRestrictedRole ? (localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false) : true),
+          "VRV": isSuperRole ? true : (isRestrictedRole ? (localFp.showVRV_read ?? localFp.showVRV ?? false) : true),
+          "AQI Sensor": isSuperRole ? true : (isRestrictedRole ? (localFp.showAQISensor_read ?? localFp.showAQISensor ?? false) : true),
+          "HVAC": isSuperRole ? true : (isRestrictedRole ? (localFp.showHVAC_read ?? localFp.showHVAC ?? false) : true),
+          "AC": isSuperRole ? true : (isRestrictedRole ? (localFp.showAC_read ?? localFp.showAC ?? false) : true)
         };
         localStorage.setItem('scada_modules_config', JSON.stringify(sidebarMapping));
         localStorage.setItem('scada_submodules_config', JSON.stringify(localFp.submoduleVisibility || {}));

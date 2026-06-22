@@ -25,12 +25,14 @@ const STANDARD_ROLES = ROLE_HIERARCHY;
 const getCurrentUserRoleIndex = () => {
   const role = localStorage.getItem('userRole') || 'USER';
   const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-  const roleName = (userData.roleName || role).toLowerCase();
+  const roleName = (userData.roleName || role || '').toLowerCase();
 
-  if (role === 'SUPER_ADMIN' || role === 'ADMIN' || roleName.includes('super')) {
+  // 1. Check for Super Admin first
+  if (role === 'SUPER_ADMIN' || roleName.includes('super')) {
     return 0;
   }
 
+  // 2. Check the specific hierarchy roles (e.g. unit head, location/area/zone manager)
   for (let i = 0; i < ROLE_HIERARCHY.length; i++) {
     const rh = ROLE_HIERARCHY[i];
     for (const term of rh.searchTerms) {
@@ -39,7 +41,13 @@ const getCurrentUserRoleIndex = () => {
       }
     }
   }
-  return 0;
+
+  // 3. Fallback for generic ADMIN role (treat as Org Admin)
+  if (role === 'ADMIN' || roleName.includes('admin')) {
+    return 1;
+  }
+
+  return 6; // Default to Operator Role (lowest)
 };
 
 const findBestMatchingRole = (standardRole, apiRoles) => {
@@ -199,8 +207,14 @@ const OPERATOR_MODULES = [
   { key: 'showMaintenance', label: 'Maintenance' },
   { key: 'showServiceHistory', label: 'Service History' },
   { key: 'showDailyDPR', label: 'Daily DPR' },
-  { key: 'showEnergyMetering', label: 'Energy Meter' }
+  { key: 'showEnergyMetering', label: 'Energy Meter' },
+  { key: 'showVRV', label: 'VRV' },
+  { key: 'showAQISensor', label: 'AQI Sensor' },
+  { key: 'showHVAC', label: 'HVAC' },
+  { key: 'showAC', label: 'AC' }
 ];
+
+const CONFIGURABLE_ROLES = ['zone_manager', 'area_manager', 'location_manager', 'unit_head', 'operator'];
 
 const AdministratorUserTab = () => {
   const [view, setView] = useState('list'); // 'list' | 'add'
@@ -688,10 +702,10 @@ const AdministratorUserTab = () => {
       roleKey: resolvedKey
     }));
 
-    if (resolvedKey === 'operator') {
+    if (CONFIGURABLE_ROLES.includes(resolvedKey)) {
       const initial = {};
       OPERATOR_MODULES.forEach(m => {
-        initial[`${m.key}_read`] = true;
+        initial[`${m.key}_read`] = hasPermissionToAssign(m.key, 'read');
         initial[`${m.key}_write`] = false;
       });
       setOperatorPerms(initial);
@@ -711,7 +725,8 @@ const AdministratorUserTab = () => {
         fetchUsers();
       } else {
         const err = await res.json();
-        alert('Failed to delete user: ' + (err.message || err.error));
+        const errMsg = err.error?.message || err.message || (typeof err.error === 'string' ? err.error : null) || 'Unknown error';
+        alert('Failed to delete user: ' + errMsg);
       }
     } catch (e) {
       console.error(e);
@@ -732,7 +747,8 @@ const AdministratorUserTab = () => {
         fetchUsers();
       } else {
         const err = await res.json();
-        alert('Failed to update user status: ' + (err.message || err.error));
+        const errMsg = err.error?.message || err.message || (typeof err.error === 'string' ? err.error : null) || 'Unknown error';
+        alert('Failed to update user status: ' + errMsg);
       }
     } catch (e) {
       console.error(e);
@@ -755,16 +771,20 @@ const AdministratorUserTab = () => {
     const matchedSite = sites.find(s => Number(s.organizationId) === Number(form.organizationId));
     const siteIdParam = matchedSite ? matchedSite.id : (sites[0]?.id || 1);
 
-    const isOperator = form.roleKey === 'operator';
-
-    const finalFeaturePermissions = {};
-    if (isOperator) {
+    let finalFeaturePermissions = {};
+    if (CONFIGURABLE_ROLES.includes(form.roleKey)) {
       OPERATOR_MODULES.forEach(m => {
         const readVal = !!operatorPerms[`${m.key}_read`];
         const writeVal = !!operatorPerms[`${m.key}_write`];
         finalFeaturePermissions[`${m.key}_read`] = readVal;
         finalFeaturePermissions[`${m.key}_write`] = writeVal;
         finalFeaturePermissions[m.key] = readVal; // legacy visibility support
+      });
+    } else {
+      OPERATOR_MODULES.forEach(m => {
+        finalFeaturePermissions[`${m.key}_read`] = true;
+        finalFeaturePermissions[`${m.key}_write`] = true;
+        finalFeaturePermissions[m.key] = true;
       });
     }
 
@@ -795,7 +815,8 @@ const AdministratorUserTab = () => {
         handleCancel();
         fetchUsers();
       } else {
-        setSaveError(json.message || json.error || 'Failed to save user');
+        const errMsg = json.error?.message || json.message || (typeof json.error === 'string' ? json.error : null) || 'Failed to save user';
+        setSaveError(errMsg);
       }
     } catch (err) {
       console.error(err);
@@ -866,7 +887,89 @@ const AdministratorUserTab = () => {
     return names.join(', ');
   };
 
+  const renderAssignedServices = (u) => {
+    const roleKey = getStandardRoleKey(u.roleName || u.role?.name);
+    const isConfigurable = CONFIGURABLE_ROLES.includes(roleKey);
+
+    if (!isConfigurable) {
+      return (
+        <div className="su-column-item-services">
+          <span className="su-service-badge write" style={{ background: 'rgba(224,94,0,0.1)', borderColor: 'rgba(224,94,0,0.3)', color: '#fb923c' }}>
+            All Services Enabled
+          </span>
+        </div>
+      );
+    }
+
+    const fp = u.featurePermissions || {};
+    const activeServices = [];
+
+    OPERATOR_MODULES.forEach(m => {
+      const hasRead = !!fp[`${m.key}_read`] || !!fp[m.key];
+      const hasWrite = !!fp[`${m.key}_write`];
+      if (hasRead) {
+        activeServices.push({
+          label: m.label,
+          write: hasWrite
+        });
+      }
+    });
+
+    if (activeServices.length === 0) {
+      return (
+        <div className="su-column-item-services">
+          <span className="su-service-badge none">
+            No services assigned
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="su-column-item-services">
+        {activeServices.map((s, idx) => (
+          <span key={idx} className={`su-service-badge ${s.write ? 'write' : ''}`} title={s.write ? 'Read & Write' : 'Read Only'}>
+            {s.label}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   const currentUserRoleIndex = getCurrentUserRoleIndex();
+
+  const hasPermissionToAssign = (key, type) => {
+    // type is 'read' or 'write'
+    if (currentUserRoleIndex <= 1) return true; // Super Admin & Org Admin have full access
+    try {
+      // First try localStorage
+      const saved = localStorage.getItem('scada_feature_permissions');
+      if (saved) {
+        const lpFp = JSON.parse(saved);
+        if (Object.keys(lpFp).length > 0) {
+          return !!(lpFp[`${key}_${type}`] ?? lpFp[key]);
+        }
+      }
+      // Fallback: look up the logged-in user's featurePermissions from the loaded users list
+      const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
+      const myRecord = users.find(u => 
+        String(u.sochiotUserId) === String(loggedInUser.id) || 
+        String(u.id) === String(loggedInUser.id) || 
+        (u.email || '').toLowerCase() === (loggedInUser.email || '').toLowerCase()
+      );
+      if (myRecord?.featurePermissions) {
+        const fp = myRecord.featurePermissions;
+        // Also update localStorage so subsequent checks are fast
+        if (Object.keys(fp).length > 0) {
+          localStorage.setItem('scada_feature_permissions', JSON.stringify(fp));
+        }
+        return !!(fp[`${key}_${type}`] ?? fp[key]);
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  };
 
   const isUserOfRole = (u, roleKey) => {
     const rName = (u.roleName || u.role?.name || '').toLowerCase();
@@ -878,37 +981,29 @@ const AdministratorUserTab = () => {
   const superAdminUsers = users.filter(u => isUserOfRole(u, 'super_admin'));
   const orgAdminUsers   = users.filter(u => isUserOfRole(u, 'org_admin'));
   
-  const zoneUsers = useMemo(() => {
-    let raw = users.filter(u => isUserOfRole(u, 'zone_manager'));
-    if (currentUserRoleIndex > 1) {
-      const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
-      const currentUserFromList = users.find(usr => usr.id === loggedInUser.id || usr.email === loggedInUser.email);
-      const myLocations = currentUserFromList?.zoneLocations || [];
-      raw = raw.filter(u => 
-        u.zoneLocations?.some(uloc => 
-          myLocations.some(myloc => 
-            isChildNodeOf(uloc.zoneNodeId, myloc.zoneNodeId, orgTree) || isChildNodeOf(myloc.zoneNodeId, uloc.zoneNodeId, orgTree)
-          )
+  const filterByLocations = (rawList) => {
+    if (currentUserRoleIndex <= 1) return rawList;
+    const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
+    const currentUserFromList = users.find(usr => usr.id === loggedInUser.id || usr.email === loggedInUser.email);
+    const myLocations = currentUserFromList?.zoneLocations || [];
+    if (!myLocations || myLocations.length === 0) return rawList;
+    return rawList.filter(u => 
+      u.zoneLocations?.some(uloc => 
+        myLocations.some(myloc => 
+          isChildNodeOf(uloc.zoneNodeId, myloc.zoneNodeId, orgTree) || isChildNodeOf(myloc.zoneNodeId, uloc.zoneNodeId, orgTree)
         )
-      );
-    }
-    return raw;
+      )
+    );
+  };
+
+  const zoneUsers = useMemo(() => {
+    const raw = users.filter(u => isUserOfRole(u, 'zone_manager'));
+    return filterByLocations(raw);
   }, [users, orgTree, currentUserRoleIndex]);
   
   const areaUsers = useMemo(() => {
     let raw = users.filter(u => isUserOfRole(u, 'area_manager'));
-    if (currentUserRoleIndex > 1) {
-      const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
-      const currentUserFromList = users.find(usr => usr.id === loggedInUser.id || usr.email === loggedInUser.email);
-      const myLocations = currentUserFromList?.zoneLocations || [];
-      raw = raw.filter(u => 
-        u.zoneLocations?.some(uloc => 
-          myLocations.some(myloc => 
-            isChildNodeOf(uloc.zoneNodeId, myloc.zoneNodeId, orgTree) || isChildNodeOf(myloc.zoneNodeId, uloc.zoneNodeId, orgTree)
-          )
-        )
-      );
-    }
+    raw = filterByLocations(raw);
     if (!selectedZoneUser) return raw;
     return raw.filter(au => 
       au.zoneLocations?.some(aloc => 
@@ -921,18 +1016,7 @@ const AdministratorUserTab = () => {
 
   const locUsers = useMemo(() => {
     let raw = users.filter(u => isUserOfRole(u, 'location_manager'));
-    if (currentUserRoleIndex > 1) {
-      const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
-      const currentUserFromList = users.find(usr => usr.id === loggedInUser.id || usr.email === loggedInUser.email);
-      const myLocations = currentUserFromList?.zoneLocations || [];
-      raw = raw.filter(u => 
-        u.zoneLocations?.some(uloc => 
-          myLocations.some(myloc => 
-            isChildNodeOf(uloc.zoneNodeId, myloc.zoneNodeId, orgTree) || isChildNodeOf(myloc.zoneNodeId, uloc.zoneNodeId, orgTree)
-          )
-        )
-      );
-    }
+    raw = filterByLocations(raw);
     if (!selectedAreaUser) {
       if (!selectedZoneUser) return raw;
       return raw.filter(lu => 
@@ -954,18 +1038,7 @@ const AdministratorUserTab = () => {
 
   const unitHeadUsers = useMemo(() => {
     let raw = users.filter(u => isUserOfRole(u, 'unit_head'));
-    if (currentUserRoleIndex > 1) {
-      const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
-      const currentUserFromList = users.find(usr => usr.id === loggedInUser.id || usr.email === loggedInUser.email);
-      const myLocations = currentUserFromList?.zoneLocations || [];
-      raw = raw.filter(u => 
-        u.zoneLocations?.some(uloc => 
-          myLocations.some(myloc => 
-            isChildNodeOf(uloc.zoneNodeId, myloc.zoneNodeId, orgTree) || isChildNodeOf(myloc.zoneNodeId, uloc.zoneNodeId, orgTree)
-          )
-        )
-      );
-    }
+    raw = filterByLocations(raw);
     if (!selectedLocUser) {
       if (!selectedAreaUser) return raw;
       return raw.filter(uh => 
@@ -987,18 +1060,7 @@ const AdministratorUserTab = () => {
 
   const operatorUsers = useMemo(() => {
     let raw = users.filter(u => isUserOfRole(u, 'operator'));
-    if (currentUserRoleIndex > 1) {
-      const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
-      const currentUserFromList = users.find(usr => usr.id === loggedInUser.id || usr.email === loggedInUser.email);
-      const myLocations = currentUserFromList?.zoneLocations || [];
-      raw = raw.filter(u => 
-        u.zoneLocations?.some(oloc => 
-          myLocations.some(myloc => 
-            isChildNodeOf(oloc.zoneNodeId, myloc.zoneNodeId, orgTree) || isChildNodeOf(myloc.zoneNodeId, oloc.zoneNodeId, orgTree)
-          )
-        )
-      );
-    }
+    raw = filterByLocations(raw);
     if (!selectedUnitHeadUser) {
       if (!selectedLocUser) return raw;
       return raw.filter(op => 
@@ -1175,7 +1237,7 @@ const AdministratorUserTab = () => {
             <div className="su-form-group" style={{flex:1}}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <label className="su-form-label">Role <span className="su-req">*</span></label>
-                {form.roleKey === 'operator' && (
+                {CONFIGURABLE_ROLES.includes(form.roleKey) && (
                   <button 
                     type="button" 
                     onClick={() => setShowOperatorPermsModal(true)} 
@@ -1277,14 +1339,16 @@ const AdministratorUserTab = () => {
         <div className="su-modal-overlay">
           <div className="su-modal-container">
             <div className="su-modal-header">
-              <h4 className="su-modal-title">Operator Module Permissions</h4>
+              <h4 className="su-modal-title">
+                {form.roleKey === 'operator' ? 'Operator' : form.roleKey === 'unit_head' ? 'Unit Head' : form.roleKey === 'location_manager' ? 'Location Manager' : form.roleKey === 'area_manager' ? 'Area Manager' : form.roleKey === 'zone_manager' ? 'Zone Manager' : 'User'} Module Permissions
+              </h4>
               <button type="button" className="su-modal-close" onClick={() => setShowOperatorPermsModal(false)}>
                 <X size={16} />
               </button>
             </div>
             <div className="su-modal-body">
               <p className="su-modal-subtitle">
-                Configure module access levels (Read/Write) for this operator.
+                Configure module access levels (Read/Write) for this {form.roleKey === 'operator' ? 'operator' : 'user'}.
               </p>
               
               <div className="su-modal-actions-row">
@@ -1294,8 +1358,8 @@ const AdministratorUserTab = () => {
                   onClick={() => {
                     const allOn = {};
                     OPERATOR_MODULES.forEach(m => {
-                      allOn[`${m.key}_read`] = true;
-                      allOn[`${m.key}_write`] = true;
+                      allOn[`${m.key}_read`] = hasPermissionToAssign(m.key, 'read');
+                      allOn[`${m.key}_write`] = hasPermissionToAssign(m.key, 'write');
                     });
                     setOperatorPerms(allOn);
                   }}
@@ -1328,16 +1392,20 @@ const AdministratorUserTab = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {OPERATOR_MODULES.map(m => {
+                    {OPERATOR_MODULES.filter(m => hasPermissionToAssign(m.key, 'read') || hasPermissionToAssign(m.key, 'write')).map(m => {
+                      const hasReadAccess = hasPermissionToAssign(m.key, 'read');
+                      const hasWriteAccess = hasPermissionToAssign(m.key, 'write');
                       const isRead = !!operatorPerms[`${m.key}_read`];
-                      const isWrite = !!operatorPerms[`${m.key}_write`];
+                      const isWrite = !!operatorPerms[`${m.key}_write`] && isRead;
                       return (
                         <tr key={m.key}>
                           <td>{m.label}</td>
                           <td style={{ textAlign: 'center' }}>
                             <span 
-                              className="su-modal-check-wrap"
+                              className={`su-modal-check-wrap ${!hasReadAccess ? 'disabled' : ''}`}
+                              style={!hasReadAccess ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' } : { cursor: 'pointer' }}
                               onClick={() => {
+                                if (!hasReadAccess) return;
                                 setOperatorPerms(prev => {
                                   const nextRead = !prev[`${m.key}_read`];
                                   return {
@@ -1357,9 +1425,10 @@ const AdministratorUserTab = () => {
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             <span 
-                              className={`su-modal-check-wrap ${!isRead ? 'disabled' : ''}`}
+                              className={`su-modal-check-wrap ${(!isRead || !hasWriteAccess) ? 'disabled' : ''}`}
+                              style={(!isRead || !hasWriteAccess) ? { opacity: 0.5, cursor: 'not-allowed', pointerEvents: 'none' } : { cursor: 'pointer' }}
                               onClick={() => {
-                                if (!isRead) return;
+                                if (!isRead || !hasWriteAccess) return;
                                 setOperatorPerms(prev => ({
                                   ...prev,
                                   [`${m.key}_write`]: !prev[`${m.key}_write`]
@@ -1521,6 +1590,7 @@ const AdministratorUserTab = () => {
                       <div className="su-column-item-locations">
                         {resolveLocationNames(u.zoneLocations, orgTree)}
                       </div>
+                      {renderAssignedServices(u)}
                       <div className="su-column-item-actions">
                         {currentUserRoleIndex < 2 && (
                           <>
@@ -1579,6 +1649,7 @@ const AdministratorUserTab = () => {
                       <div className="su-column-item-locations">
                         {resolveLocationNames(u.zoneLocations, orgTree)}
                       </div>
+                      {renderAssignedServices(u)}
                       <div className="su-column-item-actions">
                         {currentUserRoleIndex < 3 && (
                           <>
@@ -1636,6 +1707,7 @@ const AdministratorUserTab = () => {
                       <div className="su-column-item-locations">
                         {resolveLocationNames(u.zoneLocations, orgTree)}
                       </div>
+                      {renderAssignedServices(u)}
                       <div className="su-column-item-actions">
                         {currentUserRoleIndex < 4 && (
                           <>
@@ -1692,6 +1764,7 @@ const AdministratorUserTab = () => {
                       <div className="su-column-item-locations">
                         {resolveLocationNames(u.zoneLocations, orgTree)}
                       </div>
+                      {renderAssignedServices(u)}
                       <div className="su-column-item-actions">
                         {currentUserRoleIndex < 5 && (
                           <>
@@ -1741,6 +1814,7 @@ const AdministratorUserTab = () => {
                       <div className="su-column-item-locations">
                         {resolveLocationNames(u.zoneLocations, orgTree)}
                       </div>
+                      {renderAssignedServices(u)}
                       <div className="su-column-item-actions">
                         {currentUserRoleIndex < 6 && (
                           <>
@@ -2345,6 +2419,51 @@ const ScopedStyles = () => (
       opacity: 0.3;
       pointer-events: none;
       cursor: not-allowed;
+    }
+
+    /* Badges for active services */
+    .su-column-item-services {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+      padding-top: 6px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+    }
+    body.light-mode .su-column-item-services {
+      border-top-color: rgba(0, 0, 0, 0.08);
+    }
+    .su-service-badge {
+      font-size: 0.62rem;
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      color: #c084fc;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    body.light-mode .su-service-badge {
+      background: rgba(124, 58, 237, 0.04);
+      color: #7c3aed;
+    }
+    .su-service-badge.write {
+      background: rgba(224, 94, 0, 0.08);
+      border-color: rgba(224, 94, 0, 0.2);
+      color: #fb923c;
+    }
+    body.light-mode .su-service-badge.write {
+      background: rgba(224, 94, 0, 0.04);
+      color: #ea580c;
+    }
+    .su-service-badge.none {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
+      color: var(--scada-text-muted);
+    }
+    body.light-mode .su-service-badge.none {
+      background: rgba(0, 0, 0, 0.02);
+      border-color: rgba(0, 0, 0, 0.06);
     }
 
     @media (max-width:768px) {
