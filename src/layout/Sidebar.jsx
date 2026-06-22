@@ -11,12 +11,42 @@ import logo from "../assets/logo.png";
 
 const Sidebar = ({ collapsed }) => {
   const [modulesConfig, setModulesConfig] = useState(() => {
-    const saved = localStorage.getItem('scada_modules_config');
-    return saved ? JSON.parse(saved) : null;
+    const uRole = localStorage.getItem('userRole') || 'USER';
+    const userDataObj = JSON.parse(localStorage.getItem('userData') || '{}');
+    const rName = (userDataObj.roleName || uRole || '').toLowerCase();
+    const isRestricted = rName.includes('zone') || rName.includes('area') || rName.includes('location') || rName.includes('unit') || rName.includes('operator') || rName.includes('org') || rName.includes('organisation') || rName.includes('organization');
+    const isPowerUser = (uRole === 'SUPER_ADMIN' || uRole === 'ADMIN') && !isRestricted;
+
+    if (isPowerUser) return null; // Global Admins see everything
+    const savedFp = localStorage.getItem('scada_feature_permissions');
+    if (!savedFp) return {}; // Secure by default: hide everything if permissions are missing
+    const localFp = JSON.parse(savedFp);
+    return {
+      "Dashboard": localFp.showDashboard_read ?? localFp.showDashboard ?? false,
+      "Water Management": localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false,
+      "Motors": localFp.showMotors_read ?? localFp.showMotors ?? false,
+      "DG Set": localFp.showDGSet_read ?? localFp.showDGSet ?? false,
+      "Setting Templates": localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false,
+      "Alarm System": localFp.showAlarms_read ?? localFp.showAlarms ?? false,
+      "LT Panel": localFp.showLTPanel_read ?? localFp.showLTPanel ?? false,
+      "Transformer": localFp.showTransformers_read ?? localFp.showTransformers ?? false,
+      "Fire": localFp.showFirePumps_read ?? localFp.showFirePumps ?? false,
+      "Ticketing": localFp.showTicketing_read ?? localFp.showTicketing ?? false,
+      "Maintenance": localFp.showMaintenance_read ?? localFp.showMaintenance ?? false,
+      "Service History": localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false,
+      "Daily DPR": localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false,
+      "Energy Metering": localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false,
+      "VRV": localFp.showVRV_read ?? localFp.showVRV ?? false,
+      "AQI Sensor": localFp.showAQISensor_read ?? localFp.showAQISensor ?? false,
+      "HVAC": localFp.showHVAC_read ?? localFp.showHVAC ?? false,
+      "AC": localFp.showAC_read ?? localFp.showAC ?? false
+    };
   });
   const [submodulesConfig, setSubmodulesConfig] = useState(() => {
-    const saved = localStorage.getItem('scada_submodules_config');
-    return saved ? JSON.parse(saved) : {};
+    const savedFp = localStorage.getItem('scada_feature_permissions');
+    if (!savedFp) return {};
+    const localFp = JSON.parse(savedFp);
+    return localFp.submoduleVisibility || {};
   });
 
   const userRole = localStorage.getItem('userRole') || 'USER';
@@ -35,244 +65,55 @@ const Sidebar = ({ collapsed }) => {
   const showAdvancedSettings = isSuperAdmin || isAdmin || isOrgAdmin || isZone || isArea || isLoc || isUnit;
 
   useEffect(() => {
-    let intervalId;
-    const fetchConfig = async () => {
-      try {
-        let localFp = {};
-        const token = localStorage.getItem('sochiot_token');
-        if (token) {
-          try {
-            const meRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/me`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (meRes.ok) {
-              const meData = await meRes.json();
-              const fetchedUser = meData.data || meData || {};
-              localFp = fetchedUser.featurePermissions || {};
+    const updateConfig = () => {
+      const uRole = localStorage.getItem('userRole') || 'USER';
+      const userDataObj = JSON.parse(localStorage.getItem('userData') || '{}');
+      const rName = (userDataObj.roleName || uRole || '').toLowerCase();
+      const isRestricted = rName.includes('zone') || rName.includes('area') || rName.includes('location') || rName.includes('unit') || rName.includes('operator') || rName.includes('org') || rName.includes('organisation') || rName.includes('organization');
+      const isPowerUser = (uRole === 'SUPER_ADMIN' || uRole === 'ADMIN') && !isRestricted;
 
-              // If featurePermissions is empty and user is a restricted role,
-              // try fetching their own user record via the list endpoint (works without siteId)
-              if (Object.keys(localFp).length === 0) {
-                const savedUD = JSON.parse(localStorage.getItem('userData') || '{}');
-                const rn = (savedUD.roleName || '').toLowerCase();
-                const isRestricted = rn.includes('zone') || rn.includes('area') || rn.includes('location') || rn.includes('unit') || rn.includes('operator');
-                if (isRestricted && (savedUD.email || savedUD.id)) {
-                  try {
-                    const searchParam = savedUD.email ? `?search=${encodeURIComponent(savedUD.email)}&pageSize=5` : `?pageSize=100`;
-                    const userListRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users${searchParam}`, {
-                      headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (userListRes.ok) {
-                      const listJson = await userListRes.json();
-                      const usersList = listJson.data || listJson || [];
-                      const myId = String(savedUD.id);
-                      const myEmail = (savedUD.email || '').toLowerCase();
-                      const matched = Array.isArray(usersList)
-                        ? usersList.find(u => String(u.sochiotUserId) === myId || String(u.id) === myId || (u.email || '').toLowerCase() === myEmail)
-                        : null;
-                      if (matched?.featurePermissions && Object.keys(matched.featurePermissions).length > 0) {
-                        localFp = matched.featurePermissions;
-                      }
-                    }
-                  } catch (fallbackErr) {
-                    console.warn('Fallback user list fetch for featurePermissions failed:', fallbackErr);
-                  }
-                }
-              }
-
-              // Dynamically sync userData name and roleName in localStorage
-              try {
-                const savedUserDataStr = localStorage.getItem('userData');
-                if (savedUserDataStr) {
-                  const userDataObj = JSON.parse(savedUserDataStr);
-                  const nextName = fetchedUser.name || fetchedUser.username || userDataObj.name;
-                  
-                  // Resolve dynamic roleName using fetched roles if not present directly
-                  let nextRoleName = '';
-                  if (fetchedUser.roles && fetchedUser.roles.length > 0) {
-                    const firstRole = fetchedUser.roles[0];
-                    if (firstRole === 'SUPER_ADMIN') {
-                      nextRoleName = 'Super Admin';
-                    } else if (firstRole === 'ADMIN') {
-                      nextRoleName = 'Administrator';
-                    } else {
-                      nextRoleName = firstRole;
-                    }
-                  } else {
-                    nextRoleName = fetchedUser.role?.name || fetchedUser.roleName;
-                  }
-
-                  if (!nextRoleName && (fetchedUser.roleId || fetchedUser.role)) {
-                    try {
-                      const rolesRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users/roles`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                      });
-                      if (rolesRes.ok) {
-                        const rolesJson = await rolesRes.json();
-                        const rolesList = rolesJson.data || rolesJson || [];
-                        const searchId = String(fetchedUser.roleId || fetchedUser.role);
-                        const matchedRole = rolesList.find(r => String(r.id) === searchId);
-                        if (matchedRole) {
-                          nextRoleName = matchedRole.name;
-                        }
-                      }
-                    } catch (roleErr) {
-                      console.error('Failed to fetch roles list in Sidebar sync:', roleErr);
-                    }
-                  }
-                  
-                  if (!nextRoleName) {
-                    nextRoleName = fetchedUser.role === 'SUPER_ADMIN' ? 'Super Admin' : fetchedUser.role === 'ADMIN' ? 'Administrator' : userDataObj.roleName || fetchedUser.role;
-                  }
-
-                  if (userDataObj.name !== nextName || userDataObj.roleName !== nextRoleName) {
-                    userDataObj.name = nextName;
-                    userDataObj.roleName = nextRoleName;
-                    localStorage.setItem('userData', JSON.stringify(userDataObj));
-                    window.dispatchEvent(new Event('storage-update'));
-                  }
-                }
-              } catch (err) {
-                console.error('Failed to sync userData in polling loop:', err);
-              }
-            }
-          } catch (e) {
-            console.error('Failed to sync feature permissions:', e);
-            const savedFp = localStorage.getItem('scada_feature_permissions');
-            if (savedFp) localFp = JSON.parse(savedFp);
-          }
-        } else {
-          const savedFp = localStorage.getItem('scada_feature_permissions');
-          if (savedFp) localFp = JSON.parse(savedFp);
-        }
-
-        const configEndpoint = isSuperAdmin ? '/api/super-admin/config' : '/api/super-admin/admin-config';
-        const response = await fetch(configEndpoint);
-        if (response.ok) {
-          const config = await response.json();
-
-          // Map backend keys to sidebar labels
-          const moduleMap = {
-            showDashboard: 'Dashboard',
-            showWaterManagement: 'Water Management',
-            showMotors: 'Motors',
-            showDGSet: 'DG Set',
-            showSettingTemplates: 'Setting Templates',
-            showAlarms: 'Alarm System',
-            showLTPanel: 'LT Panel',
-            showTransformers: 'Transformer',
-            showFirePumps: 'Fire',
-            showTicketing: 'Ticketing',
-            showMaintenance: 'Maintenance',
-            showServiceHistory: 'Service History',
-            showDailyDPR: 'Daily DPR',
-            showEnergyMetering: 'Energy Metering',
-            showVRV: 'VRV',
-            showAQISensor: 'AQI Sensor',
-            showHVAC: 'HVAC',
-            showAC: 'AC'
-          };
-
-          const isPowerUser = isSuperAdmin || isAdmin;
-          const isRestrictedRole = roleName.includes('zone') || roleName.includes('area') || roleName.includes('location') || roleName.includes('unit') || roleName.includes('operator');
-          const sidebarModules = {};
-          Object.entries(moduleMap).forEach(([key, label]) => {
-            let isEnabled = !!config[key];
-            if (isEnabled) {
-              if (isRestrictedRole) {
-                const readPerm = localFp[`${key}_read`] ?? localFp[key] ?? false;
-                isEnabled = !!readPerm;
-              }
-            }
-            sidebarModules[label] = isEnabled;
-          });
-
-          // Check if anything changed before writing to state or storage
-          const savedModules = localStorage.getItem('scada_modules_config');
-          const savedSubmodules = localStorage.getItem('scada_submodules_config');
-          const savedFp = localStorage.getItem('scada_feature_permissions');
-          
-          const nextModulesStr = JSON.stringify(sidebarModules);
-          const nextSubmodulesStr = JSON.stringify(config.submoduleVisibility || {});
-          const nextFpStr = JSON.stringify(localFp);
-
-          const modulesChanged = savedModules !== nextModulesStr;
-          const submodulesChanged = savedSubmodules !== nextSubmodulesStr;
-          const fpChanged = savedFp !== nextFpStr;
-
-          if (modulesChanged || submodulesChanged || fpChanged) {
-            if (modulesChanged) setModulesConfig(sidebarModules);
-            if (submodulesChanged) setSubmodulesConfig(config.submoduleVisibility || {});
-            
-            localStorage.setItem('scada_modules_config', nextModulesStr);
-            localStorage.setItem('scada_submodules_config', nextSubmodulesStr);
-            localStorage.setItem('scada_feature_permissions', nextFpStr);
-
-            // Notify other components and tabs
-            window.dispatchEvent(new Event('storage-update'));
-          }
-
-          // Route enforcement: if the current route has been disabled/revoked, redirect to dashboard
-          const currentPath = window.location.pathname;
-          const pathMap = {
-            '/water-management': 'Water Management',
-            '/motors': 'Motors',
-            '/dg-set': 'DG Set',
-            '/alarm-system': 'Alarm System',
-            '/lt-panel': 'LT Panel',
-            '/transformer': 'Transformer',
-            '/fire-pumps': 'Fire',
-            '/ticketing': 'Ticketing',
-            '/maintenance': 'Maintenance',
-            '/service': 'Service History',
-            '/dpr': 'Daily DPR',
-            '/energy-metering': 'Energy Metering',
-            '/VRV': 'VRV',
-            '/aqi-sensor': 'AQI Sensor',
-            '/hvac': 'HVAC',
-            '/ac': 'AC'
-          };
-
-          for (const [prefix, moduleName] of Object.entries(pathMap)) {
-            if (currentPath.startsWith(prefix)) {
-              if (sidebarModules[moduleName] === false) {
-                console.warn(`Access to ${moduleName} revoked. Redirecting to /dashboard...`);
-                window.location.href = '/dashboard';
-                break;
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch sidebar config:', error);
-      }
-    };
-
-    fetchConfig();
-
-    // Start polling to sync permissions in real-time
-    intervalId = setInterval(fetchConfig, 15000);
-
-    const updateConfig = (e) => {
-      // If triggered by a native storage event, filter key
-      if (e && e.key && e.key !== 'scada_modules_config' && e.key !== 'scada_submodules_config' && e.key !== 'scada_feature_permissions') {
+      if (isPowerUser) {
+        setModulesConfig(null);
+        setSubmodulesConfig({});
         return;
       }
-      const savedModules = localStorage.getItem('scada_modules_config');
-      const savedSubmodules = localStorage.getItem('scada_submodules_config');
-      if (savedModules) setModulesConfig(JSON.parse(savedModules));
-      if (savedSubmodules) setSubmodulesConfig(JSON.parse(savedSubmodules));
+      const savedFp = localStorage.getItem('scada_feature_permissions');
+      const localFp = savedFp ? JSON.parse(savedFp) : {};
+      const calculated = {
+        "Dashboard": localFp.showDashboard_read ?? localFp.showDashboard ?? false,
+        "Water Management": localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false,
+        "Motors": localFp.showMotors_read ?? localFp.showMotors ?? false,
+        "DG Set": localFp.showDGSet_read ?? localFp.showDGSet ?? false,
+        "Setting Templates": localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false,
+        "Alarm System": localFp.showAlarms_read ?? localFp.showAlarms ?? false,
+        "LT Panel": localFp.showLTPanel_read ?? localFp.showLTPanel ?? false,
+        "Transformer": localFp.showTransformers_read ?? localFp.showTransformers ?? false,
+        "Fire": localFp.showFirePumps_read ?? localFp.showFirePumps ?? false,
+        "Ticketing": localFp.showTicketing_read ?? localFp.showTicketing ?? false,
+        "Maintenance": localFp.showMaintenance_read ?? localFp.showMaintenance ?? false,
+        "Service History": localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false,
+        "Daily DPR": localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false,
+        "Energy Metering": localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false,
+        "VRV": localFp.showVRV_read ?? localFp.showVRV ?? false,
+        "AQI Sensor": localFp.showAQISensor_read ?? localFp.showAQISensor ?? false,
+        "HVAC": localFp.showHVAC_read ?? localFp.showHVAC ?? false,
+        "AC": localFp.showAC_read ?? localFp.showAC ?? false
+      };
+      setModulesConfig(calculated);
+      setSubmodulesConfig(localFp.submoduleVisibility || {});
     };
 
     window.addEventListener('storage-update', updateConfig);
     window.addEventListener('storage', updateConfig);
     
+    // Initial sync
+    updateConfig();
+    
     return () => {
       window.removeEventListener('storage-update', updateConfig);
       window.removeEventListener('storage', updateConfig);
-      if (intervalId) clearInterval(intervalId);
     };
-  }, [isSuperAdmin, isAdmin]);
+  }, [userRole, roleName]);
 
   const handleExitImpersonation = () => {
     const originalUser = localStorage.getItem('impersonator_backup_user');
@@ -565,8 +406,9 @@ const Sidebar = ({ collapsed }) => {
         {menuItems.filter(item => {
           const isAllowedByRole = !item.adminOnly || isAdmin || isSuperAdmin;
           const isEnabledByConfig = !modulesConfig || modulesConfig[item.title] === true;
+          const isNotDisabled = !item.disabled;
 
-          return isAllowedByRole && isEnabledByConfig;
+          return isAllowedByRole && isEnabledByConfig && isNotDisabled;
         }).map((item, index) => {
           const effectiveDisabled = item.disabled;
           return item.subItems ? (

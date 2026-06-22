@@ -495,8 +495,9 @@ const AdministratorUserTab = () => {
       const res = await fetchWithAuth(`${import.meta.env.VITE_BACKEND_BMS_URL}/users?pageSize=1000`);
       if (res.ok) {
         const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          const filtered = json.data.filter(u => u.userType === 'SYSTEM' || u.role?.roleType === 'SYSTEM');
+        if (json.success && json.data) {
+          const usersList = Array.isArray(json.data) ? json.data : (json.data.list || []);
+          const filtered = usersList.filter(u => u.userType === 'SYSTEM' || u.role?.roleType === 'SYSTEM');
           setUsers(filtered);
 
           const loggedInUser = JSON.parse(localStorage.getItem('userData') || '{}');
@@ -819,8 +820,8 @@ const AdministratorUserTab = () => {
         setSaveError(errMsg);
       }
     } catch (err) {
-      console.error(err);
-      setSaveError('Network error. Failed to save user.');
+      console.error("Save user error:", err);
+      setSaveError(`Network error. Failed to save user: ${err.message}`);
     } finally {
       setSaving(false);
     }

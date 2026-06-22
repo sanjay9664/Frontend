@@ -151,6 +151,8 @@ const SuperAdminConfig = () => {
       setTenants(data);
     } catch (error) {
       console.error('Error fetching tenants:', error);
+      if (returnOnly) return [];
+      setTenants([]);
     }
   };
 
@@ -164,6 +166,8 @@ const SuperAdminConfig = () => {
       setConfig(merged);
     } catch (error) {
       console.error('Error fetching global config:', error);
+      if (returnOnly) return {};
+      setConfig(mergeConfig({}));
     }
   };
 

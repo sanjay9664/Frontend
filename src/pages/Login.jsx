@@ -122,12 +122,10 @@ const Login = ({ onLoginSuccess }) => {
 
         // If featurePermissions is empty, try fetching via user list endpoint
         // This covers Global Scope users where the backend siteId is null
-        if (Object.keys(localFp).length === 0) {
-          const rn = (meData.roleName || meData.role?.name || role || '').toLowerCase();
-          const isRestricted = rn.includes('zone') || rn.includes('area') || rn.includes('location') || rn.includes('unit') || rn.includes('operator');
+        if (Object.keys(localFp).length === 0 && role !== 'SUPER_ADMIN') {
           const userEmail = meData.email || credentials.username;
           const userId = meData.id || meData._id;
-          if (isRestricted && (userEmail || userId)) {
+          if (userEmail || userId) {
             try {
               const searchParam = userEmail ? `?search=${encodeURIComponent(userEmail)}&pageSize=5` : `?pageSize=100`;
               const userListRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users${searchParam}`, {
@@ -153,28 +151,27 @@ const Login = ({ onLoginSuccess }) => {
 
         localStorage.setItem('scada_feature_permissions', JSON.stringify(localFp));
         const isSuperRole = role === 'SUPER_ADMIN';
-        const roleNameStr = (meData.roleName || meData.role?.name || role).toLowerCase();
-        const isRestrictedRole = roleNameStr.includes('zone') || roleNameStr.includes('area') || roleNameStr.includes('location') || roleNameStr.includes('unit') || roleNameStr.includes('operator');
+        const isPowerUser = role === 'SUPER_ADMIN' || role === 'ADMIN';
 
         const sidebarMapping = {
-          "Dashboard": isSuperRole ? true : (isRestrictedRole ? (localFp.showDashboard_read ?? localFp.showDashboard ?? false) : true),
-          "Water Management": isSuperRole ? true : (isRestrictedRole ? (localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false) : true),
-          "Motors": isSuperRole ? true : (isRestrictedRole ? (localFp.showMotors_read ?? localFp.showMotors ?? false) : true),
-          "DG Set": isSuperRole ? true : (isRestrictedRole ? (localFp.showDGSet_read ?? localFp.showDGSet ?? false) : true),
-          "Setting Templates": isSuperRole ? true : (isRestrictedRole ? (localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false) : true),
-          "Alarm System": isSuperRole ? true : (isRestrictedRole ? (localFp.showAlarms_read ?? localFp.showAlarms ?? false) : true),
-          "LT Panel": isSuperRole ? true : (isRestrictedRole ? (localFp.showLTPanel_read ?? localFp.showLTPanel ?? false) : true),
-          "Transformer": isSuperRole ? true : (isRestrictedRole ? (localFp.showTransformers_read ?? localFp.showTransformers ?? false) : true),
-          "Fire": isSuperRole ? true : (isRestrictedRole ? (localFp.showFirePumps_read ?? localFp.showFirePumps ?? false) : true),
-          "Ticketing": isSuperRole ? true : (isRestrictedRole ? (localFp.showTicketing_read ?? localFp.showTicketing ?? false) : true),
-          "Maintenance": isSuperRole ? true : (isRestrictedRole ? (localFp.showMaintenance_read ?? localFp.showMaintenance ?? false) : true),
-          "Service History": isSuperRole ? true : (isRestrictedRole ? (localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false) : true),
-          "Daily DPR": isSuperRole ? true : (isRestrictedRole ? (localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false) : true),
-          "Energy Metering": isSuperRole ? true : (isRestrictedRole ? (localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false) : true),
-          "VRV": isSuperRole ? true : (isRestrictedRole ? (localFp.showVRV_read ?? localFp.showVRV ?? false) : true),
-          "AQI Sensor": isSuperRole ? true : (isRestrictedRole ? (localFp.showAQISensor_read ?? localFp.showAQISensor ?? false) : true),
-          "HVAC": isSuperRole ? true : (isRestrictedRole ? (localFp.showHVAC_read ?? localFp.showHVAC ?? false) : true),
-          "AC": isSuperRole ? true : (isRestrictedRole ? (localFp.showAC_read ?? localFp.showAC ?? false) : true)
+          "Dashboard": isPowerUser ? true : (localFp.showDashboard_read ?? localFp.showDashboard ?? false),
+          "Water Management": isPowerUser ? true : (localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false),
+          "Motors": isPowerUser ? true : (localFp.showMotors_read ?? localFp.showMotors ?? false),
+          "DG Set": isPowerUser ? true : (localFp.showDGSet_read ?? localFp.showDGSet ?? false),
+          "Setting Templates": isPowerUser ? true : (localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false),
+          "Alarm System": isPowerUser ? true : (localFp.showAlarms_read ?? localFp.showAlarms ?? false),
+          "LT Panel": isPowerUser ? true : (localFp.showLTPanel_read ?? localFp.showLTPanel ?? false),
+          "Transformer": isPowerUser ? true : (localFp.showTransformers_read ?? localFp.showTransformers ?? false),
+          "Fire": isPowerUser ? true : (localFp.showFirePumps_read ?? localFp.showFirePumps ?? false),
+          "Ticketing": isPowerUser ? true : (localFp.showTicketing_read ?? localFp.showTicketing ?? false),
+          "Maintenance": isPowerUser ? true : (localFp.showMaintenance_read ?? localFp.showMaintenance ?? false),
+          "Service History": isPowerUser ? true : (localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false),
+          "Daily DPR": isPowerUser ? true : (localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false),
+          "Energy Metering": isPowerUser ? true : (localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false),
+          "VRV": isPowerUser ? true : (localFp.showVRV_read ?? localFp.showVRV ?? false),
+          "AQI Sensor": isPowerUser ? true : (localFp.showAQISensor_read ?? localFp.showAQISensor ?? false),
+          "HVAC": isPowerUser ? true : (localFp.showHVAC_read ?? localFp.showHVAC ?? false),
+          "AC": isPowerUser ? true : (localFp.showAC_read ?? localFp.showAC ?? false)
         };
         localStorage.setItem('scada_modules_config', JSON.stringify(sidebarMapping));
         localStorage.setItem('scada_submodules_config', JSON.stringify(localFp.submoduleVisibility || {}));
