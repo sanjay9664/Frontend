@@ -455,25 +455,25 @@ const DeviceRegistration = () => {
               <span style={{ flex: 2 }}>Event Field</span>
               <span style={{ flex: 2 }}>Display Name</span>
               <span style={{ flex: 1.5 }}>Threshold Value</span>
-              <span style={{ width: 40 }}></span>
+              <span style={{ width: 44 }}></span>
             </div>
 
             {templateRows.map((row, idx) => (
               <div className="dr-template-row" key={idx}>
+                {/* 1. Device ID Dropdown */}
                 <select
                   className="dr-input dr-template-input dr-mini-select"
                   style={{ flex: 2 }}
                   value={row.sochiotDeviceId}
                   onChange={(e) => handleDeviceChangeInRow(idx, e.target.value)}
                 >
-                  <option value="" style={{ background: '#120600', color: '#fff' }}>SELECT DEVICE</option>
+                  <option value="">Select Device</option>
                   {sochiotDevices.map(d => (
-                    <option key={d.id} value={d.id} style={{ background: '#120600', color: '#fff' }}>
-                      {d.label}
-                    </option>
+                    <option key={d.id} value={d.id}>{d.label}</option>
                   ))}
                 </select>
 
+                {/* 2. Module ID Dropdown */}
                 <select
                   className="dr-input dr-template-input dr-mini-select"
                   style={{ flex: 1.5 }}
@@ -481,40 +481,41 @@ const DeviceRegistration = () => {
                   onChange={(e) => handleModuleChangeInRow(idx, e.target.value)}
                   disabled={!row.sochiotDeviceId}
                 >
-                  <option value="" style={{ background: '#120600', color: '#fff' }}>SELECT MODULE</option>
+                  <option value="">Select Module</option>
                   {(row.modules || []).map(m => (
-                    <option key={m.id} value={m.id} style={{ background: '#120600', color: '#fff' }}>
-                      {m.label}
-                    </option>
+                    <option key={m.id} value={m.id}>{m.label}</option>
                   ))}
                 </select>
 
-                <select
-                  className="dr-input dr-template-input dr-mini-select"
-                  style={{ flex: 2 }}
-                  value={row.sochiotFieldName}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    updateRow(idx, 'sochiotFieldName', val);
-                    if (!row.displayName) {
-                      const titleCase = val
-                        .replace(/_/g, ' ')
-                        .replace(/([A-Z])/g, ' $1')
-                        .trim()
-                        .replace(/^\w/, (c) => c.toUpperCase());
-                      updateRow(idx, 'displayName', titleCase);
-                    }
-                  }}
-                  disabled={!row.moduleId}
-                >
-                  <option value="" style={{ background: '#120600', color: '#fff' }}>SELECT FIELD</option>
-                  {(row.eventFields || []).map(f => (
-                    <option key={f} value={f} style={{ background: '#120600', color: '#fff' }}>
-                      {f}
-                    </option>
-                  ))}
-                </select>
+                {/* 3. Event Field Input with Autocomplete Datalist */}
+                <div style={{ flex: 2, position: 'relative', display: 'flex' }}>
+                  <input
+                    className="dr-input dr-template-input"
+                    style={{ width: '100%' }}
+                    placeholder="Type or Select Field"
+                    value={row.sochiotFieldName}
+                    list={`fields-${idx}`}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      updateRow(idx, 'sochiotFieldName', val);
+                      if (!row.displayName) {
+                        const titleCase = val
+                          .replace(/_/g, ' ')
+                          .replace(/([A-Z])/g, ' $1')
+                          .trim()
+                          .replace(/^\w/, (c) => c.toUpperCase());
+                        updateRow(idx, 'displayName', titleCase);
+                      }
+                    }}
+                  />
+                  <datalist id={`fields-${idx}`}>
+                    {(row.eventFields || []).map(f => (
+                      <option key={f} value={f} />
+                    ))}
+                  </datalist>
+                </div>
 
+                {/* 4. Display Name Input */}
                 <input
                   className="dr-input dr-template-input"
                   style={{ flex: 2 }}
@@ -523,6 +524,7 @@ const DeviceRegistration = () => {
                   onChange={(e) => updateRow(idx, 'displayName', e.target.value)}
                 />
 
+                {/* 5. Threshold Value Input */}
                 <input
                   className="dr-input dr-template-input"
                   style={{ flex: 1.5 }}
@@ -532,6 +534,7 @@ const DeviceRegistration = () => {
                   onChange={(e) => updateRow(idx, 'warningHigh', e.target.value)}
                 />
 
+                {/* Delete Row Button */}
                 <button
                   className="dr-row-delete"
                   onClick={() => removeRow(idx)}
@@ -591,12 +594,16 @@ const DeviceRegistration = () => {
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
         .dr-wrapper {
           min-height: 100vh;
-          background: #080300;
+          background: radial-gradient(circle at 50% 0%, #1e0e05 0%, #0c0502 60%, #030100 100%);
           padding: 0;
           display: flex;
           flex-direction: column;
+          font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+          -webkit-font-smoothing: antialiased;
         }
 
         /* ── Header ── */
@@ -604,37 +611,49 @@ const DeviceRegistration = () => {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 24px 32px;
-          border-bottom: 1px solid rgba(224, 94, 0, 0.1);
-          background: rgba(18, 6, 0, 0.7);
-          backdrop-filter: blur(12px);
+          padding: 24px 40px;
+          border-bottom: 1px solid rgba(255, 107, 0, 0.15);
+          background: rgba(12, 5, 2, 0.85);
+          backdrop-filter: blur(20px);
           position: sticky;
           top: 0;
           z-index: 50;
+          box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
         }
-        .dr-header-left { display: flex; align-items: center; gap: 16px; }
+        .dr-header-left { display: flex; align-items: center; gap: 20px; }
         .dr-back-btn {
-          background: rgba(224, 94, 0, 0.06);
-          border: 1px solid rgba(224, 94, 0, 0.15);
+          background: rgba(255, 107, 0, 0.05);
+          border: 1px solid rgba(255, 107, 0, 0.25);
+          border-radius: 12px;
+          padding: 12px;
+          color: #ff6b00;
+          cursor: pointer;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dr-back-btn:hover {
+          background: rgba(255, 107, 0, 0.15);
+          border-color: #ff6b00;
+          box-shadow: 0 0 16px rgba(255, 107, 0, 0.25);
+          transform: translateX(-2px);
+        }
+        .dr-title { font-size: 1.75rem; font-weight: 800; color: #f8fafc; margin: 0; letter-spacing: -0.5px; }
+        .dr-subtitle { font-size: 0.9rem; color: #94a3b8; margin: 4px 0 0; font-weight: 500; }
+        .dr-close-btn {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255,255,255,0.08);
           border-radius: 10px;
           padding: 10px;
-          color: #e05e00;
+          color: #94a3b8;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.25s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-        .dr-back-btn:hover { background: rgba(224, 94, 0, 0.15); box-shadow: 0 0 12px rgba(224, 94, 0, 0.15); }
-        .dr-title { font-size: 1.5rem; font-weight: 900; color: #f1f5f9; margin: 0; letter-spacing: -0.5px; }
-        .dr-subtitle { font-size: 0.8rem; color: #64748b; margin: 2px 0 0; font-weight: 500; }
-        .dr-close-btn {
-          background: transparent;
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 8px;
-          padding: 8px;
-          color: #475569;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-        .dr-close-btn:hover { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+        .dr-close-btn:hover { color: #f43f5e; border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.05); transform: rotate(90deg); }
 
         /* ── Stepper ── */
         .dr-stepper {
@@ -642,373 +661,399 @@ const DeviceRegistration = () => {
           align-items: center;
           justify-content: center;
           gap: 0;
-          padding: 28px 32px;
-          background: rgba(18, 6, 0, 0.3);
-          border-bottom: 1px solid rgba(224, 94, 0, 0.06);
+          padding: 32px 40px;
+          background: rgba(12, 5, 2, 0.4);
+          border-bottom: 1px solid rgba(255, 107, 0, 0.08);
         }
         .dr-step {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 16px;
           cursor: pointer;
-          opacity: 0.4;
-          transition: all 0.3s;
+          opacity: 0.5;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .dr-step:hover { opacity: 0.85; }
         .dr-step.active { opacity: 1; }
-        .dr-step.completed { opacity: 0.85; }
+        .dr-step.completed { opacity: 0.9; }
         .dr-step-circle {
-          width: 38px;
-          height: 38px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
-          background: rgba(255,255,255,0.04);
-          border: 2px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.02);
+          border: 2px solid rgba(255,255,255,0.12);
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #64748b;
+          color: #94a3b8;
           font-weight: 800;
-          font-size: 0.85rem;
-          transition: all 0.3s;
+          font-size: 0.95rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .dr-step.active .dr-step-circle {
-          background: linear-gradient(135deg, #e05e00, #8C3B06);
-          border-color: #e05e00;
+          background: linear-gradient(135deg, #ff6b00, #b23b00);
+          border-color: #ff6b00;
           color: #fff;
-          box-shadow: 0 0 20px rgba(224, 94, 0, 0.35);
+          box-shadow: 0 0 25px rgba(255, 107, 0, 0.45);
         }
         .dr-step.completed .dr-step-circle {
           background: #10b981;
           border-color: #10b981;
           color: #fff;
-          box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+          box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
         }
         .dr-step-info { display: flex; flex-direction: column; }
-        .dr-step-label { font-size: 0.85rem; font-weight: 700; color: #e2e8f0; }
-        .dr-step-desc { font-size: 0.7rem; color: #64748b; }
+        .dr-step-label { font-size: 0.95rem; font-weight: 700; color: #f8fafc; transition: color 0.3s; }
+        .dr-step.active .dr-step-label { color: #ff8c3a; }
+        .dr-step-desc { font-size: 0.78rem; color: #94a3b8; margin-top: 2px; }
         .dr-step-line {
-          width: 80px;
+          width: 120px;
           height: 2px;
-          background: rgba(224, 94, 0, 0.12);
-          margin: 0 20px;
+          background: rgba(255, 107, 0, 0.15);
+          margin: 0 24px;
           position: relative;
         }
 
         /* ── Form Content ── */
         .dr-content {
           flex: 1;
-          padding: 32px;
-          max-width: 900px;
+          padding: 48px 40px;
+          max-width: 1280px; /* INCREASED FROM 900px FOR WIDER/BEAUTIFUL WIDTH */
           margin: 0 auto;
           width: 100%;
         }
-        .dr-form-step { animation: drSlideIn 0.35s ease; }
+        .dr-form-step { animation: drSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
         @keyframes drSlideIn {
-          from { opacity: 0; transform: translateY(16px); }
+          from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
 
         .dr-section-title {
           display: flex;
           align-items: center;
-          gap: 10px;
-          font-size: 1rem;
+          gap: 12px;
+          font-size: 1.15rem;
           font-weight: 800;
-          color: #e2e8f0;
+          color: #f8fafc;
           text-transform: uppercase;
-          letter-spacing: 1px;
-          margin-bottom: 24px;
-          padding-bottom: 12px;
-          border-bottom: 1px solid rgba(224, 94, 0, 0.12);
+          letter-spacing: 1.5px;
+          margin-bottom: 28px;
+          padding-bottom: 14px;
+          border-bottom: 1px solid rgba(255, 107, 0, 0.15);
         }
-        .dr-section-title svg { color: #e05e00; }
+        .dr-section-title svg { color: #ff6b00; filter: drop-shadow(0 0 8px rgba(255, 107, 0, 0.4)); }
         .dr-section-badge {
           margin-left: auto;
-          background: rgba(224, 94, 0, 0.08);
-          color: #e05e00;
-          font-size: 0.7rem;
-          padding: 4px 10px;
+          background: rgba(255, 107, 0, 0.08);
+          color: #ff8c3a;
+          font-size: 0.75rem;
+          padding: 6px 12px;
           border-radius: 20px;
-          border: 1px solid rgba(224, 94, 0, 0.2);
+          border: 1px solid rgba(255, 107, 0, 0.25);
+          font-weight: 700;
+          letter-spacing: 0.5px;
         }
         .dr-section-hint {
-          color: #64748b;
-          font-size: 0.8rem;
-          margin: -16px 0 20px;
+          color: #94a3b8;
+          font-size: 0.9rem;
+          margin: -18px 0 28px;
+          line-height: 1.5;
         }
 
-        .dr-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .dr-grid-1 { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
+        .dr-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-bottom: 28px; }
+        .dr-grid-1 { display: grid; grid-template-columns: 1fr; gap: 28px; margin-bottom: 28px; }
 
         /* ── Fields ── */
-        .dr-field { display: flex; flex-direction: column; gap: 6px; position: relative; }
+        .dr-field { display: flex; flex-direction: column; gap: 8px; position: relative; }
         .dr-label {
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-size: 0.72rem;
-          font-weight: 800;
-          color: #94a3b8;
+          gap: 8px;
+          font-size: 0.8rem;
+          font-weight: 700;
+          color: #cbd5e1; /* BRIGHTER FOR CLEAR READING */
           text-transform: uppercase;
           letter-spacing: 1px;
         }
-        .dr-label svg { color: #6b4c2a; }
-        .dr-req { color: #e05e00; font-size: 0.8rem; }
+        .dr-label svg { color: #ff6b00; } /* GLOWING ORANGE FOR ICONS */
+        .dr-req { color: #ff6b00; font-size: 0.9rem; margin-left: 2px; }
 
         .dr-input {
-          background: rgba(20, 8, 0, 0.95);
-          border: 1px solid rgba(224, 94, 0, 0.15);
-          border-radius: 10px;
-          padding: 12px 16px;
-          color: #e2e8f0;
-          font-size: 0.85rem;
+          background: rgba(18, 9, 3, 0.75);
+          border: 1px solid rgba(255, 107, 0, 0.2);
+          border-radius: 12px;
+          padding: 14px 18px;
+          color: #f8fafc;
+          font-size: 0.92rem;
           font-weight: 500;
           outline: none;
-          transition: all 0.25s;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: inherit;
         }
-        .dr-input::placeholder { color: #475569; }
+        .dr-input::placeholder { color: #64748b; } /* LIGHTER AND MUCH MORE READABLE PLACEHOLDER */
         .dr-input:focus {
-          border-color: #e05e00;
-          box-shadow: 0 0 0 3px rgba(224, 94, 0, 0.1), 0 0 16px rgba(224, 94, 0, 0.06);
+          border-color: #ff6b00;
+          box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15), 0 0 20px rgba(255, 107, 0, 0.12);
+          background: rgba(28, 14, 5, 0.85);
         }
-        .dr-input option { background: #1a0800; color: #e2e8f0; }
 
         .dr-textarea {
-          background: rgba(20, 8, 0, 0.95);
-          border: 1px solid rgba(224, 94, 0, 0.15);
-          border-radius: 10px;
-          padding: 12px 16px;
-          color: #e2e8f0;
-          font-size: 0.85rem;
+          background: rgba(18, 9, 3, 0.75);
+          border: 1px solid rgba(255, 107, 0, 0.2);
+          border-radius: 12px;
+          padding: 14px 18px;
+          color: #f8fafc;
+          font-size: 0.92rem;
           font-weight: 500;
           outline: none;
           resize: vertical;
-          transition: all 0.25s;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: inherit;
+          line-height: 1.5;
         }
-        .dr-textarea::placeholder { color: #475569; }
+        .dr-textarea::placeholder { color: #64748b; } /* LIGHTER AND MUCH MORE READABLE PLACEHOLDER */
         .dr-textarea:focus {
-          border-color: #e05e00;
-          box-shadow: 0 0 0 3px rgba(224, 94, 0, 0.1);
+          border-color: #ff6b00;
+          box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15), 0 0 20px rgba(255, 107, 0, 0.12);
+          background: rgba(28, 14, 5, 0.85);
         }
 
         /* ── Custom Select ── */
         .dr-select-btn {
           width: 100%;
-          background: rgba(20, 8, 0, 0.95);
-          border: 1px solid rgba(224, 94, 0, 0.15);
-          border-radius: 10px;
-          padding: 12px 16px;
-          color: #e2e8f0;
-          font-size: 0.85rem;
+          background: rgba(18, 9, 3, 0.75);
+          border: 1px solid rgba(255, 107, 0, 0.2);
+          border-radius: 12px;
+          padding: 14px 18px;
+          color: #f8fafc;
+          font-size: 0.92rem;
           font-weight: 500;
           text-align: left;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          transition: all 0.25s;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           font-family: inherit;
         }
-        .dr-select-btn:hover { border-color: rgba(224, 94, 0, 0.35); }
+        .dr-select-btn:hover { border-color: rgba(255, 107, 0, 0.45); background: rgba(24, 12, 4, 0.8); }
         .dr-select-btn.active {
-          border-color: #e05e00;
-          box-shadow: 0 0 0 3px rgba(224, 94, 0, 0.1);
-          background: rgba(30, 10, 0, 0.98);
+          border-color: #ff6b00;
+          box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.15), 0 0 20px rgba(255, 107, 0, 0.12);
+          background: rgba(28, 14, 5, 0.9);
         }
-        .dr-sel-placeholder { color: #475569; }
-        .dr-sel-value { color: #e2e8f0; }
-        .dr-sel-arrow { color: #e05e00; transition: transform 0.2s; }
+        .dr-sel-placeholder { color: #64748b; } /* BRIGHTER PLACEHOLDER IN SELECT */
+        .dr-sel-value { color: #f8fafc; }
+        .dr-sel-arrow { color: #ff6b00; transition: transform 0.25s; }
         .dr-sel-arrow.rotated { transform: rotate(180deg); }
 
         .dr-select-dropdown {
           position: absolute;
-          top: calc(100% + 4px);
+          top: calc(100% + 6px);
           left: 0;
           right: 0;
-          background: rgba(18, 6, 0, 0.98);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(224, 94, 0, 0.25);
-          border-radius: 10px;
-          padding: 6px 0;
-          max-height: 240px;
+          background: rgba(16, 7, 2, 0.98);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 107, 0, 0.35);
+          border-radius: 12px;
+          padding: 8px 0;
+          max-height: 280px;
           overflow-y: auto;
           z-index: 100;
-          box-shadow: 0 12px 40px rgba(0,0,0,0.7), 0 0 20px rgba(224, 94, 0, 0.08);
-          animation: drDropIn 0.15s ease;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.85), 0 0 30px rgba(255, 107, 0, 0.1);
+          animation: drDropIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .dr-select-dropdown::-webkit-scrollbar { width: 4px; }
-        .dr-select-dropdown::-webkit-scrollbar-thumb { background: rgba(224, 94, 0, 0.3); border-radius: 4px; }
-        @keyframes drDropIn {
-          from { opacity: 0; transform: translateY(-6px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        .dr-select-dropdown::-webkit-scrollbar { width: 6px; }
+        .dr-select-dropdown::-webkit-scrollbar-track { background: transparent; }
+        .dr-select-dropdown::-webkit-scrollbar-thumb { background: rgba(255, 107, 0, 0.3); border-radius: 6px; }
+        .dr-select-dropdown::-webkit-scrollbar-thumb:hover { background: rgba(255, 107, 0, 0.5); }
+
         .dr-select-option {
-          padding: 10px 16px;
-          font-size: 0.82rem;
+          padding: 12px 18px;
+          font-size: 0.9rem;
           font-weight: 600;
-          color: #c8c8c8;
+          color: #cbd5e1;
           cursor: pointer;
           transition: all 0.15s;
           border-bottom: 1px solid rgba(255,255,255,0.03);
         }
         .dr-select-option:last-child { border-bottom: none; }
-        .dr-select-option:hover { background: rgba(224, 94, 0, 0.12); color: #fff; padding-left: 20px; }
-        .dr-select-option.selected { background: rgba(224, 94, 0, 0.18); color: #e05e00; font-weight: 700; }
-        .dr-select-option.disabled { color: #475569; cursor: default; }
+        .dr-select-option:hover { background: rgba(255, 107, 0, 0.12); color: #fff; padding-left: 24px; }
+        .dr-select-option.selected { background: rgba(255, 107, 0, 0.18); color: #ff6b00; font-weight: 700; }
+        .dr-select-option.disabled { color: #64748b; cursor: default; }
 
         /* ── Template Rows ── */
         .dr-template-header {
           display: flex;
-          gap: 10px;
-          padding: 0 8px 10px;
-          border-bottom: 1px solid rgba(224, 94, 0, 0.1);
-          margin-bottom: 10px;
+          gap: 16px;
+          padding: 0 16px 14px;
+          border-bottom: 1px solid rgba(255, 107, 0, 0.15);
+          margin-bottom: 16px;
         }
         .dr-template-header span {
-          font-size: 0.68rem;
+          font-size: 0.78rem;
           font-weight: 800;
-          color: #6b4c2a;
+          color: #ff9e59; /* MUCH BRIGHTER AND WARMEST COLOR, NOT DARK BROWN! */
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 1.5px;
         }
         .dr-template-row {
           display: flex;
-          gap: 10px;
+          gap: 16px;
           align-items: center;
-          margin-bottom: 8px;
-          padding: 4px 0;
+          margin-bottom: 14px;
+          padding: 6px 0;
         }
         .dr-template-input {
-          padding: 10px 12px !important;
-          font-size: 0.8rem !important;
-          border-radius: 8px !important;
+          padding: 12px 16px !important;
+          font-size: 0.88rem !important;
+          border-radius: 10px !important;
         }
         .dr-mini-select {
-          appearance: auto;
+          appearance: none;
+          background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ff6b00'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+          background-repeat: no-repeat;
+          background-position: right 12px center;
+          background-size: 12px;
+          padding-right: 32px !important;
           cursor: pointer;
         }
+        .dr-mini-select option {
+          background: #100602;
+          color: #cbd5e1;
+        }
         .dr-row-delete {
-          width: 36px;
-          height: 36px;
-          border-radius: 8px;
-          background: rgba(239, 68, 68, 0.06);
-          border: 1px solid rgba(239, 68, 68, 0.1);
-          color: #ef4444;
+          width: 44px;
+          height: 44px;
+          border-radius: 10px;
+          background: rgba(244, 63, 94, 0.05);
+          border: 1px solid rgba(244, 63, 94, 0.2);
+          color: #f43f5e;
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
-          transition: all 0.2s;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
           flex-shrink: 0;
         }
-        .dr-row-delete:hover:not(:disabled) { background: rgba(239, 68, 68, 0.15); box-shadow: 0 0 12px rgba(239, 68, 68, 0.2); }
-        .dr-row-delete:disabled { opacity: 0.3; cursor: not-allowed; }
+        .dr-row-delete:hover:not(:disabled) {
+          background: rgba(244, 63, 94, 0.18);
+          border-color: #f43f5e;
+          box-shadow: 0 0 16px rgba(244, 63, 94, 0.25);
+          transform: scale(1.05);
+        }
+        .dr-row-delete:disabled { opacity: 0.25; cursor: not-allowed; }
 
         .dr-add-row-btn {
           display: flex;
           align-items: center;
-          gap: 8px;
-          background: rgba(224, 94, 0, 0.05);
-          border: 1px dashed rgba(224, 94, 0, 0.25);
-          border-radius: 10px;
-          padding: 12px 20px;
-          color: #e05e00;
-          font-size: 0.8rem;
+          gap: 10px;
+          background: rgba(255, 107, 0, 0.04);
+          border: 1px dashed rgba(255, 107, 0, 0.35);
+          border-radius: 12px;
+          padding: 14px 20px;
+          color: #ff8c3a;
+          font-size: 0.9rem;
           font-weight: 700;
           cursor: pointer;
-          transition: all 0.2s;
-          margin-top: 6px;
+          transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          margin-top: 14px;
           width: 100%;
           justify-content: center;
         }
-        .dr-add-row-btn:hover { background: rgba(224, 94, 0, 0.1); border-color: rgba(224, 94, 0, 0.4); }
+        .dr-add-row-btn:hover {
+          background: rgba(255, 107, 0, 0.09);
+          border-color: #ff6b00;
+          color: #ff6b00;
+          box-shadow: 0 0 16px rgba(255, 107, 0, 0.1);
+        }
 
         /* ── Footer ── */
         .dr-footer {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 20px 32px;
-          border-top: 1px solid rgba(224, 94, 0, 0.1);
-          background: rgba(18, 6, 0, 0.7);
-          backdrop-filter: blur(12px);
+          padding: 24px 40px;
+          border-top: 1px solid rgba(255, 107, 0, 0.15);
+          background: rgba(12, 5, 2, 0.85);
+          backdrop-filter: blur(20px);
           position: sticky;
           bottom: 0;
           z-index: 50;
+          box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
         }
-        .dr-footer-right { display: flex; gap: 10px; }
+        .dr-footer-right { display: flex; gap: 14px; }
 
         .dr-btn-ghost {
-          background: rgba(255,255,255,0.04);
+          background: rgba(255,255,255,0.03);
           border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 25px;
-          padding: 10px 24px;
+          border-radius: 30px;
+          padding: 12px 28px;
           color: #94a3b8;
-          font-size: 0.8rem;
+          font-size: 0.88rem;
           font-weight: 700;
           cursor: pointer;
           transition: all 0.25s;
         }
-        .dr-btn-ghost:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+        .dr-btn-ghost:hover { background: rgba(255,255,255,0.08); color: #f8fafc; }
 
         .dr-btn-outline {
           background: transparent;
-          border: 1px solid rgba(224, 94, 0, 0.25);
-          border-radius: 25px;
-          padding: 10px 24px;
-          color: #e05e00;
-          font-size: 0.8rem;
+          border: 1px solid rgba(255, 107, 0, 0.35);
+          border-radius: 30px;
+          padding: 12px 28px;
+          color: #ff8c3a;
+          font-size: 0.88rem;
           font-weight: 700;
           cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           transition: all 0.25s;
         }
-        .dr-btn-outline:hover { background: rgba(224, 94, 0, 0.08); }
+        .dr-btn-outline:hover { background: rgba(255, 107, 0, 0.08); color: #ff6b00; border-color: #ff6b00; }
 
         .dr-btn-primary {
-          background: linear-gradient(135deg, #e05e00, #8C3B06);
+          background: linear-gradient(135deg, #ff6b00, #b23b00);
           border: none;
-          border-radius: 25px;
-          padding: 10px 28px;
+          border-radius: 30px;
+          padding: 12px 32px;
           color: #fff;
-          font-size: 0.8rem;
-          font-weight: 800;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.25s;
-          box-shadow: 0 4px 16px rgba(224, 94, 0, 0.3);
-          letter-spacing: 0.01em;
-        }
-        .dr-btn-primary:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(224, 94, 0, 0.4); }
-        .dr-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-        .dr-btn-submit {
-          background: linear-gradient(135deg, #e05e00, #8C3B06);
-          border: none;
-          border-radius: 25px;
-          padding: 10px 28px;
-          color: #fff;
-          font-size: 0.8rem;
+          font-size: 0.88rem;
           font-weight: 800;
           cursor: pointer;
           display: flex;
           align-items: center;
           gap: 8px;
           transition: all 0.25s;
-          box-shadow: 0 4px 16px rgba(224, 94, 0, 0.3);
-          letter-spacing: 0.01em;
+          box-shadow: 0 4px 20px rgba(255, 107, 0, 0.3);
+          letter-spacing: 0.02em;
         }
-        .dr-btn-submit:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(224, 94, 0, 0.4); }
-        .dr-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .dr-btn-primary:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 6px 28px rgba(255, 107, 0, 0.45); }
+        .dr-btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .dr-btn-submit {
+          background: linear-gradient(135deg, #ff6b00, #b23b00);
+          border: none;
+          border-radius: 30px;
+          padding: 12px 32px;
+          color: #fff;
+          font-size: 0.88rem;
+          font-weight: 800;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          transition: all 0.25s;
+          box-shadow: 0 4px 20px rgba(255, 107, 0, 0.3);
+          letter-spacing: 0.02em;
+        }
+        .dr-btn-submit:hover:not(:disabled) { filter: brightness(1.15); transform: translateY(-1px); box-shadow: 0 6px 28px rgba(255, 107, 0, 0.45); }
+        .dr-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
         .dr-spinner {
-          width: 14px;
-          height: 14px;
+          width: 16px;
+          height: 16px;
           border: 2px solid rgba(255,255,255,0.3);
           border-top-color: #fff;
           border-radius: 50%;
@@ -1021,37 +1066,37 @@ const DeviceRegistration = () => {
           display: flex;
           align-items: center;
           gap: 10px;
-          padding: 12px 32px;
-          background: rgba(239, 68, 68, 0.08);
-          border-top: 1px solid rgba(239, 68, 68, 0.2);
-          color: #fca5a5;
-          font-size: 0.82rem;
+          padding: 14px 40px;
+          background: rgba(244, 63, 94, 0.08);
+          border-top: 1px solid rgba(244, 63, 94, 0.25);
+          color: #fda4af;
+          font-size: 0.88rem;
           font-weight: 600;
         }
-        .dr-error-close { background: transparent; border: none; color: #ef4444; cursor: pointer; margin-left: auto; }
+        .dr-error-close { background: transparent; border: none; color: #f43f5e; cursor: pointer; margin-left: auto; display: flex; align-items: center; }
         .dr-success-banner {
           display: flex;
           align-items: center;
           gap: 10px;
-          padding: 12px 32px;
-          background: rgba(224, 94, 0, 0.08);
-          border-top: 1px solid rgba(224, 94, 0, 0.2);
-          color: #e05e00;
-          font-size: 0.82rem;
+          padding: 14px 40px;
+          background: rgba(16, 185, 129, 0.08);
+          border-top: 1px solid rgba(16, 185, 129, 0.25);
+          color: #6ee7b7;
+          font-size: 0.88rem;
           font-weight: 600;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-          .dr-grid-2 { grid-template-columns: 1fr; }
-          .dr-stepper { flex-direction: column; gap: 16px; }
-          .dr-step-line { width: 2px; height: 24px; }
+          .dr-grid-2 { grid-template-columns: 1fr; gap: 20px; }
+          .dr-stepper { flex-direction: column; gap: 16px; padding: 24px; }
+          .dr-step-line { width: 2px; height: 24px; margin: 8px 0; }
           .dr-template-header { display: none; }
-          .dr-template-row { flex-wrap: wrap; }
+          .dr-template-row { flex-wrap: wrap; gap: 12px; }
           .dr-template-input { flex: 1 1 100% !important; }
           .dr-content { padding: 24px 16px; }
           .dr-header { padding: 16px 20px; }
-          .dr-footer { padding: 16px 20px; flex-wrap: wrap; gap: 10px; }
+          .dr-footer { padding: 16px 20px; flex-wrap: wrap; gap: 12px; }
         }
       `}} />
     </div>
