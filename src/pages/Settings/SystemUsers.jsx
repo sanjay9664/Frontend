@@ -132,8 +132,8 @@ const TYPE_COLORS = {
 /* ══════════════════════════════════════════════
    SHARED: Location Tree
 ══════════════════════════════════════════════ */
-const TreeNode = ({ node, level = 0, checked, onToggle, expanded, onExpand, isAllowedCheck }) => {
-  const hasChildren = node.children?.length > 0;
+const TreeNode = ({ node, level = 0, checked, onToggle, expanded, onExpand, isAllowedCheck, hideChildrenLevel }) => {
+  const hasChildren = node.children?.length > 0 && !(hideChildrenLevel !== undefined && level >= hideChildrenLevel);
   const isExpanded  = expanded[node.id];
   const isAllowed = isAllowedCheck ? isAllowedCheck(node.rawId, node.type) : true;
   return (
@@ -175,6 +175,7 @@ const TreeNode = ({ node, level = 0, checked, onToggle, expanded, onExpand, isAl
           expanded={expanded} 
           onExpand={onExpand} 
           isAllowedCheck={isAllowedCheck}
+          hideChildrenLevel={hideChildrenLevel}
         />
       ))}
     </div>
@@ -327,7 +328,6 @@ const AdministratorUserTab = () => {
   };
 
   const buildLocationTreeFromOrg = (org) => {
-    console.log('DEBUG buildLocationTreeFromOrg roleKey:', form.roleKey);
     if (!org) return [];
 
     const parseLocation = (loc) => ({
@@ -340,15 +340,12 @@ const AdministratorUserTab = () => {
 
     const parseZone = (zone) => {
       const children = [];
-      const isZoneManager = form.roleKey === 'zone_manager';
-      const hideLocations = form.roleKey === 'area_manager' || form.roleKey === 'location_manager' || form.roleKey === 'unit_head';
-
-      if (!isZoneManager && Array.isArray(zone.subZones)) {
+      if (Array.isArray(zone.subZones)) {
         zone.subZones.forEach(sub => {
           children.push(parseZone(sub));
         });
       }
-      if (!isZoneManager && !hideLocations && Array.isArray(zone.locations)) {
+      if (Array.isArray(zone.locations)) {
         zone.locations.forEach(loc => {
           children.push(parseLocation(loc));
         });
@@ -406,7 +403,7 @@ const AdministratorUserTab = () => {
 
   const orgTree = useMemo(() => {
     return buildLocationTreeFromOrg(selectedOrgDetails);
-  }, [selectedOrgDetails, form.roleKey]);
+  }, [selectedOrgDetails]);
 
   const getSelectedNodes = (tree, checkedState) => {
     let selectedMap = {};
@@ -1245,24 +1242,33 @@ const AdministratorUserTab = () => {
                 Select organization to load location tree
               </div>
             ) : (
-              orgTree.map(n => (
-                <TreeNode 
-                  key={n.id} 
-                  node={n} 
-                  level={0} 
-                  checked={checked} 
-                  onToggle={id => {
-                    const nodeType = id.startsWith('zone-') ? 'ZONE' : id.startsWith('loc-') ? 'LOCATION' : 'org';
-                    const rawId = id.replace(/^(org|zone|loc)-/, '');
-                    if (isNodeAllowedToSelect(rawId, nodeType)) {
-                      setChecked(p => ({ ...p, [id]: !p[id] }));
-                    }
-                  }} 
-                  expanded={expanded} 
-                  onExpand={id => setExpanded(p => ({ ...p, [id]: !p[id] }))}
-                  isAllowedCheck={isNodeAllowedToSelect}
-                />
-              ))
+              orgTree.map(n => {
+                let hideChildrenLevel = undefined;
+                if (form.roleKey === 'zone_manager') {
+                  hideChildrenLevel = 1;
+                } else if (form.roleKey === 'area_manager') {
+                  hideChildrenLevel = 2;
+                }
+                return (
+                  <TreeNode 
+                    key={n.id} 
+                    node={n} 
+                    level={0} 
+                    checked={checked} 
+                    onToggle={id => {
+                      const nodeType = id.startsWith('zone-') ? 'ZONE' : id.startsWith('loc-') ? 'LOCATION' : 'org';
+                      const rawId = id.replace(/^(org|zone|loc)-/, '');
+                      if (isNodeAllowedToSelect(rawId, nodeType)) {
+                        setChecked(p => ({ ...p, [id]: !p[id] }));
+                      }
+                    }} 
+                    expanded={expanded} 
+                    onExpand={id => setExpanded(p => ({ ...p, [id]: !p[id] }))}
+                    isAllowedCheck={isNodeAllowedToSelect}
+                    hideChildrenLevel={hideChildrenLevel}
+                  />
+                );
+              })
             )}
           </div>
         </div>
