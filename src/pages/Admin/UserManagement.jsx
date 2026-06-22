@@ -4,7 +4,7 @@ import {
   UserPlus, Trash2, Save,
   Search, LayoutDashboard, Droplets, Activity, Database, Bell, Zap,
   ShieldAlert, ClipboardList, PenTool, History, Gauge, User, X,
-  CheckCircle, Key, Settings, RefreshCw
+  CheckCircle, Key, Settings, RefreshCw, Wind
 } from 'lucide-react';
 
 
@@ -24,6 +24,10 @@ const moduleDetails = {
   showServiceHistory   : { label: 'Service History', icon: <History         size={15} /> },
   showDailyDPR         : { label: 'Daily DPR',       icon: <Gauge           size={15} /> },
   showEnergyMetering   : { label: 'Energy Meter',    icon: <Zap             size={15} /> },
+  showVRV              : { label: 'VRV',             icon: <Wind            size={15} /> },
+  showAQISensor        : { label: 'AQI Sensor',      icon: <Wind            size={15} /> },
+  showHVAC             : { label: 'HVAC',            icon: <Settings        size={15} /> },
+  showAC               : { label: 'AC',              icon: <Wind            size={15} /> },
 };
 
 const buildDefaultConfig = () => {

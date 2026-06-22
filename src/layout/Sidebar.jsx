@@ -50,6 +50,36 @@ const Sidebar = ({ collapsed }) => {
               const fetchedUser = meData.data || meData || {};
               localFp = fetchedUser.featurePermissions || {};
 
+              // If featurePermissions is empty and user is a restricted role,
+              // try fetching their own user record via the list endpoint (works without siteId)
+              if (Object.keys(localFp).length === 0) {
+                const savedUD = JSON.parse(localStorage.getItem('userData') || '{}');
+                const rn = (savedUD.roleName || '').toLowerCase();
+                const isRestricted = rn.includes('zone') || rn.includes('area') || rn.includes('location') || rn.includes('unit') || rn.includes('operator');
+                if (isRestricted && (savedUD.email || savedUD.id)) {
+                  try {
+                    const searchParam = savedUD.email ? `?search=${encodeURIComponent(savedUD.email)}&pageSize=5` : `?pageSize=100`;
+                    const userListRes = await fetch(`${import.meta.env.VITE_BACKEND_BMS_URL}/users${searchParam}`, {
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (userListRes.ok) {
+                      const listJson = await userListRes.json();
+                      const usersList = listJson.data || listJson || [];
+                      const myId = String(savedUD.id);
+                      const myEmail = (savedUD.email || '').toLowerCase();
+                      const matched = Array.isArray(usersList)
+                        ? usersList.find(u => String(u.sochiotUserId) === myId || String(u.id) === myId || (u.email || '').toLowerCase() === myEmail)
+                        : null;
+                      if (matched?.featurePermissions && Object.keys(matched.featurePermissions).length > 0) {
+                        localFp = matched.featurePermissions;
+                      }
+                    }
+                  } catch (fallbackErr) {
+                    console.warn('Fallback user list fetch for featurePermissions failed:', fallbackErr);
+                  }
+                }
+              }
+
               // Dynamically sync userData name and roleName in localStorage
               try {
                 const savedUserDataStr = localStorage.getItem('userData');
@@ -144,12 +174,12 @@ const Sidebar = ({ collapsed }) => {
           };
 
           const isPowerUser = isSuperAdmin || isAdmin;
-          const isOperator = roleName.includes('operator');
+          const isRestrictedRole = roleName.includes('zone') || roleName.includes('area') || roleName.includes('location') || roleName.includes('unit') || roleName.includes('operator');
           const sidebarModules = {};
           Object.entries(moduleMap).forEach(([key, label]) => {
             let isEnabled = !!config[key];
             if (isEnabled) {
-              if (isOperator) {
+              if (isRestrictedRole) {
                 const readPerm = localFp[`${key}_read`] ?? localFp[key] ?? false;
                 isEnabled = !!readPerm;
               }
@@ -221,7 +251,7 @@ const Sidebar = ({ collapsed }) => {
     fetchConfig();
 
     // Start polling to sync permissions in real-time
-    intervalId = setInterval(fetchConfig, 3000);
+    intervalId = setInterval(fetchConfig, 15000);
 
     const updateConfig = (e) => {
       // If triggered by a native storage event, filter key
