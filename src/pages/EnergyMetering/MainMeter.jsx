@@ -1049,7 +1049,7 @@ const MainMeter = () => {
                 <div className="mfm-metallic-bezel">
                   {/* Brand Header */}
                   <div className="mfm-brand-header d-flex justify-content-between align-items-center mb-2 px-2">
-                    <span className="mfm-brand-logo">SOCHIOT</span>
+                    <span className="mfm-brand-logo">TRUEiSENSE</span>
                     <span className="mfm-model-no">APM Series</span>
                   </div>
 
@@ -1110,7 +1110,7 @@ const MainMeter = () => {
                       {/* Standards markings — dynamic */}
                       <div className="mfm-spec-labels font-monospace text-secondary text-end">
                         <div>Sr No: {data.meterSrno > 0 ? data.meterSrno : '—'}</div>
-                        <div>{data.freq > 0 ? `${data.freq.toFixed(1)}Hz` : '—'} · SOCHIOT</div>
+                        <div>{data.freq > 0 ? `${data.freq.toFixed(1)}Hz` : '—'} · TRUEiSENSE</div>
                       </div>
                     </div>
 

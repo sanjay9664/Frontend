@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="76 103 360 360" fill="none">
+  <!-- Stylized winged T logo -->
+  <path d="M 96,200 Q 256,150 416,200 Q 440,215 400,240 Q 288,240 288,280 V 380 Q 288,416 256,416 Q 224,416 224,380 V 280 Q 224,240 112,240 Q 72,215 96,200 Z" fill="#000000" />
+  <!-- Center vertical orange stripe -->
+  <path d="M 248,172 L 248,392 C 248,405 264,405 264,392 L 264,172 Z" fill="#e05e00" />
+</svg>

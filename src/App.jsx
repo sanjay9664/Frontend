@@ -1,15 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './layout/MainLayout';
 import AppRoutes from './routes/AppRoutes';
 import Login from './pages/Login';
 import { DeviceStatusProvider } from './services/DeviceStatusContext';
 import { ThemeProvider } from './context/ThemeContext';
+import SplashScreen from './components/SplashScreen';
+import brandLogo from './assets/trueisense.jpeg';
+import loginLogo from './assets/logo.png';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
     localStorage.getItem('isAuthenticated') === 'true'
   );
+
+  // Preload critical branding assets for instant rendering and cache hits
+  useEffect(() => {
+    const img1 = new Image();
+    img1.src = brandLogo;
+    const img2 = new Image();
+    img2.src = loginLogo;
+  }, []);
+
+  // Track if splash should show (runs on fresh load/reload and login)
+  const [showSplash, setShowSplash] = useState(
+    localStorage.getItem('isAuthenticated') !== 'true'
+  );
+  const prevAuthRef = useRef(isAuthenticated);
 
   // Auto-login from URL parameters (useful for iframe embedding)
   useEffect(() => {
@@ -51,26 +68,44 @@ function App() {
   // Listen for storage changes (for login/logout across tabs if needed)
   useEffect(() => {
     const checkAuth = () => {
-      setIsAuthenticated(localStorage.getItem('isAuthenticated') === 'true');
+      const newAuth = localStorage.getItem('isAuthenticated') === 'true';
+      // Trigger splash only when transitioning from not-authenticated → authenticated
+      if (!prevAuthRef.current && newAuth) {
+        setShowSplash(true);
+      }
+      prevAuthRef.current = newAuth;
+      setIsAuthenticated(newAuth);
     };
     window.addEventListener('storage', checkAuth);
+    window.addEventListener('storage-update', checkAuth);
     // Periodically check local storage status to synchronize within the same tab
     const interval = setInterval(checkAuth, 500);
     return () => {
       window.removeEventListener('storage', checkAuth);
+      window.removeEventListener('storage-update', checkAuth);
       clearInterval(interval);
     };
   }, []);
 
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+    setShowSplash(true);
+  };
+
   return (
     <ThemeProvider>
       <DeviceStatusProvider>
+        {/* Splash screen overlay — shows only on fresh login */}
+        {showSplash && (
+          <SplashScreen onComplete={() => setShowSplash(false)} />
+        )}
+
         <Router>
           <Routes>
             {/* LOGIN ROUTE */}
             <Route 
               path="/login" 
-              element={!isAuthenticated ? <Login /> : <Navigate to={localStorage.getItem('userRole') === 'SUPER_ADMIN' ? "/super-admin" : "/dashboard"} replace />} 
+              element={!isAuthenticated ? <Login onLoginSuccess={handleLoginSuccess} /> : <Navigate to={localStorage.getItem('userRole') === 'SUPER_ADMIN' ? "/super-admin" : "/dashboard"} replace />} 
             />
 
             {/* PROTECTED ROUTES */}
@@ -94,4 +129,3 @@ function App() {
 }
 
 export default App;
-

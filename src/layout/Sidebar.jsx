@@ -3,19 +3,50 @@ import { NavLink } from 'react-router-dom';
 import {
   Droplets, Activity, Zap, Bell, Battery, ShieldAlert,
   Settings, ClipboardList, PenTool, History, LayoutDashboard,
-  ChevronRight, Gauge, Database, Lock, User, Wind, Leaf, Thermometer
+  ChevronRight, Gauge, Database, Lock, User, Wind, Leaf, Thermometer,
+  Building2
 } from 'lucide-react';
 import { Accordion } from 'react-bootstrap';
 import logo from "../assets/logo.png";
 
 const Sidebar = ({ collapsed }) => {
   const [modulesConfig, setModulesConfig] = useState(() => {
-    const saved = localStorage.getItem('scada_modules_config');
-    return saved ? JSON.parse(saved) : null;
+    const uRole = localStorage.getItem('userRole') || 'USER';
+    const userDataObj = JSON.parse(localStorage.getItem('userData') || '{}');
+    const rName = (userDataObj.roleName || uRole || '').toLowerCase();
+    const isRestricted = rName.includes('zone') || rName.includes('area') || rName.includes('location') || rName.includes('unit') || rName.includes('operator') || rName.includes('org') || rName.includes('organisation') || rName.includes('organization');
+    const isPowerUser = (uRole === 'SUPER_ADMIN' || uRole === 'ADMIN') && !isRestricted;
+
+    if (isPowerUser) return null; // Global Admins see everything
+    const savedFp = localStorage.getItem('scada_feature_permissions');
+    if (!savedFp) return {}; // Secure by default: hide everything if permissions are missing
+    const localFp = JSON.parse(savedFp);
+    return {
+      "Dashboard": localFp.showDashboard_read ?? localFp.showDashboard ?? false,
+      "Water Management": localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false,
+      "Motors": localFp.showMotors_read ?? localFp.showMotors ?? false,
+      "DG Set": localFp.showDGSet_read ?? localFp.showDGSet ?? false,
+      "Setting Templates": localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false,
+      "Alarm System": localFp.showAlarms_read ?? localFp.showAlarms ?? false,
+      "LT Panel": localFp.showLTPanel_read ?? localFp.showLTPanel ?? false,
+      "Transformer": localFp.showTransformers_read ?? localFp.showTransformers ?? false,
+      "Fire": localFp.showFirePumps_read ?? localFp.showFirePumps ?? false,
+      "Ticketing": localFp.showTicketing_read ?? localFp.showTicketing ?? false,
+      "Maintenance": localFp.showMaintenance_read ?? localFp.showMaintenance ?? false,
+      "Service History": localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false,
+      "Daily DPR": localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false,
+      "Energy Metering": localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false,
+      "VRV": localFp.showVRV_read ?? localFp.showVRV ?? false,
+      "AQI Sensor": localFp.showAQISensor_read ?? localFp.showAQISensor ?? false,
+      "HVAC": localFp.showHVAC_read ?? localFp.showHVAC ?? false,
+      "AC": localFp.showAC_read ?? localFp.showAC ?? false
+    };
   });
   const [submodulesConfig, setSubmodulesConfig] = useState(() => {
-    const saved = localStorage.getItem('scada_submodules_config');
-    return saved ? JSON.parse(saved) : {};
+    const savedFp = localStorage.getItem('scada_feature_permissions');
+    if (!savedFp) return {};
+    const localFp = JSON.parse(savedFp);
+    return localFp.submoduleVisibility || {};
   });
 
   const userRole = localStorage.getItem('userRole') || 'USER';
@@ -23,65 +54,66 @@ const Sidebar = ({ collapsed }) => {
   const isAdmin = userRole === 'ADMIN';
   const isImpersonating = !!localStorage.getItem('impersonator_backup_role');
 
+  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+  const roleName = (userData.roleName || userRole || '').toLowerCase();
+
+  const isOrgAdmin = roleName.includes('org') || roleName.includes('organisation') || roleName.includes('organization');
+  const isZone = roleName.includes('zone');
+  const isArea = roleName.includes('area');
+  const isLoc = roleName.includes('location');
+  const isUnit = roleName.includes('unit');
+  const showAdvancedSettings = isSuperAdmin || isAdmin || isOrgAdmin || isZone || isArea || isLoc || isUnit;
+
   useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const configEndpoint = isSuperAdmin ? '/api/super-admin/config' : '/api/super-admin/admin-config';
-        const response = await fetch(configEndpoint);
-        if (response.ok) {
-          const config = await response.json();
-
-          // Map backend keys to sidebar labels
-          const moduleMap = {
-            showDashboard: 'Dashboard',
-            showWaterManagement: 'Water Management',
-            showMotors: 'Motors',
-            showDGSet: 'DG Set',
-            showSettingTemplates: 'Setting Templates',
-            showAlarms: 'Alarm System',
-            showLTPanel: 'LT Panel',
-            showTransformers: 'Transformer',
-            showFirePumps: 'Fire',
-            showTicketing: 'Ticketing',
-            showMaintenance: 'Maintenance',
-            showServiceHistory: 'Service History',
-            showDailyDPR: 'Daily DPR',
-            showEnergyMetering: 'Energy Metering',
-            showVRV: 'VRV',
-            showAQISensor: 'AQI Sensor',
-            showHVAC: 'HVAC',
-            showAC: 'AC'
-          };
-
-          const sidebarModules = {};
-          Object.entries(moduleMap).forEach(([key, label]) => {
-            sidebarModules[label] = config[key];
-          });
-
-          setModulesConfig(sidebarModules);
-          setSubmodulesConfig(config.submoduleVisibility || {});
-
-          // Also update localStorage so it's ready for next reload
-          localStorage.setItem('scada_modules_config', JSON.stringify(sidebarModules));
-          localStorage.setItem('scada_submodules_config', JSON.stringify(config.submoduleVisibility || {}));
-        }
-      } catch (error) {
-        console.error('Failed to fetch sidebar config:', error);
-      }
-    };
-
-    fetchConfig();
-
     const updateConfig = () => {
-      const savedModules = localStorage.getItem('scada_modules_config');
-      const savedSubmodules = localStorage.getItem('scada_submodules_config');
-      if (savedModules) setModulesConfig(JSON.parse(savedModules));
-      if (savedSubmodules) setSubmodulesConfig(JSON.parse(savedSubmodules));
+      const uRole = localStorage.getItem('userRole') || 'USER';
+      const userDataObj = JSON.parse(localStorage.getItem('userData') || '{}');
+      const rName = (userDataObj.roleName || uRole || '').toLowerCase();
+      const isRestricted = rName.includes('zone') || rName.includes('area') || rName.includes('location') || rName.includes('unit') || rName.includes('operator') || rName.includes('org') || rName.includes('organisation') || rName.includes('organization');
+      const isPowerUser = (uRole === 'SUPER_ADMIN' || uRole === 'ADMIN') && !isRestricted;
+
+      if (isPowerUser) {
+        setModulesConfig(null);
+        setSubmodulesConfig({});
+        return;
+      }
+      const savedFp = localStorage.getItem('scada_feature_permissions');
+      const localFp = savedFp ? JSON.parse(savedFp) : {};
+      const calculated = {
+        "Dashboard": localFp.showDashboard_read ?? localFp.showDashboard ?? false,
+        "Water Management": localFp.showWaterManagement_read ?? localFp.showWaterManagement ?? false,
+        "Motors": localFp.showMotors_read ?? localFp.showMotors ?? false,
+        "DG Set": localFp.showDGSet_read ?? localFp.showDGSet ?? false,
+        "Setting Templates": localFp.showSettingTemplates_read ?? localFp.showSettingTemplates ?? false,
+        "Alarm System": localFp.showAlarms_read ?? localFp.showAlarms ?? false,
+        "LT Panel": localFp.showLTPanel_read ?? localFp.showLTPanel ?? false,
+        "Transformer": localFp.showTransformers_read ?? localFp.showTransformers ?? false,
+        "Fire": localFp.showFirePumps_read ?? localFp.showFirePumps ?? false,
+        "Ticketing": localFp.showTicketing_read ?? localFp.showTicketing ?? false,
+        "Maintenance": localFp.showMaintenance_read ?? localFp.showMaintenance ?? false,
+        "Service History": localFp.showServiceHistory_read ?? localFp.showServiceHistory ?? false,
+        "Daily DPR": localFp.showDailyDPR_read ?? localFp.showDailyDPR ?? false,
+        "Energy Metering": localFp.showEnergyMetering_read ?? localFp.showEnergyMetering ?? false,
+        "VRV": localFp.showVRV_read ?? localFp.showVRV ?? false,
+        "AQI Sensor": localFp.showAQISensor_read ?? localFp.showAQISensor ?? false,
+        "HVAC": localFp.showHVAC_read ?? localFp.showHVAC ?? false,
+        "AC": localFp.showAC_read ?? localFp.showAC ?? false
+      };
+      setModulesConfig(calculated);
+      setSubmodulesConfig(localFp.submoduleVisibility || {});
     };
 
     window.addEventListener('storage-update', updateConfig);
-    return () => window.removeEventListener('storage-update', updateConfig);
-  }, []);
+    window.addEventListener('storage', updateConfig);
+    
+    // Initial sync
+    updateConfig();
+    
+    return () => {
+      window.removeEventListener('storage-update', updateConfig);
+      window.removeEventListener('storage', updateConfig);
+    };
+  }, [userRole, roleName]);
 
   const handleExitImpersonation = () => {
     const originalUser = localStorage.getItem('impersonator_backup_user');
@@ -322,19 +354,12 @@ const Sidebar = ({ collapsed }) => {
         <div className="mb-2">
           {isSuperAdmin && !isImpersonating && (
             <NavLink to="/super-admin" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <ShieldAlert size={20} className="text-info" />
-              {!collapsed && <span className="ms-3 text-info">Super Admin Console</span>}
+              <ShieldAlert size={20} className="text-accent" />
+              {!collapsed && <span className="ms-3 text-accent">Super Admin Console</span>}
             </NavLink>
           )}
 
-          {isAdmin && (
-            <NavLink to="/admin/manage-users" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <User size={20} className="text-success" />
-              {!collapsed && <span className="ms-3 text-success">Manage Users</span>}
-            </NavLink>
-          )}
-
-          {(isAdmin || isSuperAdmin) && (
+          {showAdvancedSettings && (
             <Accordion className="sidebar-accordion">
               <Accordion.Item eventKey="admin-config" className="bg-transparent border-0">
                 <Accordion.Header className={`sidebar-link ${collapsed ? 'collapsed-header' : ''}`}>
@@ -345,6 +370,23 @@ const Sidebar = ({ collapsed }) => {
                 </Accordion.Header>
                 {!collapsed && (
                   <Accordion.Body className="p-0 ps-4">
+                    {isSuperAdmin && (
+                      <NavLink to="/super-admin/sites" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                        Site Management
+                      </NavLink>
+                    )}
+                    <NavLink to="/admin/manage-users" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      User Management
+                    </NavLink>
+                    <NavLink to="/admin/manage-devices" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      Device Management
+                    </NavLink>
+                    <NavLink to="/admin/manage-areas" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      Area Management
+                    </NavLink>
+                    <NavLink to="/settings/system-users" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
+                      System Users
+                    </NavLink>
                     {(!modulesConfig || modulesConfig["Setting Templates"] !== false) && (
                       <NavLink to="/config/templates" className={({ isActive }) => `sidebar-sub-link ${isActive ? 'active' : ''}`}>
                         Setting Templates
@@ -364,8 +406,9 @@ const Sidebar = ({ collapsed }) => {
         {menuItems.filter(item => {
           const isAllowedByRole = !item.adminOnly || isAdmin || isSuperAdmin;
           const isEnabledByConfig = !modulesConfig || modulesConfig[item.title] === true;
+          const isNotDisabled = !item.disabled;
 
-          return isAllowedByRole && isEnabledByConfig;
+          return isAllowedByRole && isEnabledByConfig && isNotDisabled;
         }).map((item, index) => {
           const effectiveDisabled = item.disabled;
           return item.subItems ? (
@@ -444,7 +487,7 @@ const Sidebar = ({ collapsed }) => {
         }
         .sidebar-link:hover, .sidebar-link.active {
           color: var(--scada-text);
-          background-color: rgba(255, 255, 255, 0.05);
+          background-color: rgba(224, 94, 0, 0.15);
           border-left-color: var(--scada-accent);
         }
         .sidebar-disabled-item {

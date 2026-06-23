@@ -7,11 +7,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
       },
       '/socket.io': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:3002',
         ws: true,
         changeOrigin: true
       },
@@ -24,6 +24,11 @@ export default defineConfig({
         target: 'https://app.sochiot.com/api/config-engine',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/sochiot-config/, '')
+      },
+      '/sochiot-location': {
+        target: 'https://app.sochiot.com/api/location-engine',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sochiot-location/, '')
       },
       '/sochiot-triggers': {
         target: 'https://app.sochiot.com/api/triggers',

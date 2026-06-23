@@ -36,7 +36,15 @@ const SiemensStyleDG = () => {
   const [showToast, setShowToast] = useState(false);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const userRole = (localStorage.getItem('userRole') || 'user').toUpperCase();
-  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+  const hasDGSetWrite = (() => {
+    try {
+      const perms = JSON.parse(localStorage.getItem('scada_feature_permissions') || '{}');
+      return perms.showDGSet_write === true;
+    } catch (e) {
+      return false;
+    }
+  })();
+  const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || hasDGSetWrite;
 
   // Initialize state with last known stats from localStorage if available, otherwise fallback to 0/empty
   const getInitialData = (dgName) => {

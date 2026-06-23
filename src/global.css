@@ -1,39 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
 :root {
   color-scheme: dark;
-  --scada-bg: #0f172a;
-  --scada-sidebar: #1e293b;
-  --scada-card: #1e293b;
-  --scada-header: #0f172a;
-  --scada-border: #334155;
+  --scada-bg: #120A05;
+  --scada-sidebar: #190e07;
+  --scada-card: #1c1008;
+  --scada-header: #120A05;
+  --scada-border: rgba(224, 94, 0, 0.18);
   --scada-text: #f8fafc;
-  --scada-text-muted: #94a3b8;
-  --scada-accent: #38bdf8;
+  --scada-text-muted: #d69e7e;
+  --scada-accent: #e05e00;
   
   --status-running: #22c55e;
   --status-fault: #ef4444;
-  --status-warning: #f59e0b;
-  --status-stopped: #94a3b8;
+  --status-warning: #e05e00;
+  --status-stopped: #8c7365;
 }
 
 body.light-mode {
   color-scheme: light;
-  --scada-bg: #d2d3db;
-  --scada-sidebar: #e2e8f0;
-  --scada-card: #f8fafc;
-  --scada-header: #d2d3db;
-  --scada-border: rgba(0, 0, 0, 0.08);
-  --scada-text: #1e293b;
-  --scada-text-muted: #475569;
-  --scada-accent: #0284c7;
+  --scada-bg: #f8fafc; /* Crisp premium off-white background */
+  --scada-sidebar: #ffffff; /* Pure white sidebar */
+  --scada-card: #ffffff; /* Pure white cards */
+  --scada-header: rgba(255, 255, 255, 0.85); /* Transparent glass header */
+  --scada-border: rgba(0, 0, 0, 0.06); /* Very subtle border */
+  --scada-text: #0f172a; /* Deep charcoal text */
+  --scada-text-muted: #64748b; /* Slate 500 gray */
+  --scada-accent: #e05e00; /* Signature TRUEiSENSE orange */
 
-  --status-running: #047857;
-  --status-fault: #b91c1c;
-  --status-warning: #b45309;
-  --status-stopped: #475569;
+  --status-running: #10b981; /* Premium green */
+  --status-fault: #ef4444; /* Clean rose red */
+  --status-warning: #f59e0b; /* Bright warning yellow */
+  --status-stopped: #64748b; /* Slate gray */
+  
+  background: var(--scada-bg) !important;
+  background-color: var(--scada-bg) !important;
+  background-image: none !important;
 }
 
 body.light-mode .scada-header {
-  background-color: rgba(210, 211, 219, 0.9);
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--scada-border) !important;
 }
 
 body.light-mode .scada-table thead th {
@@ -86,9 +95,10 @@ body.light-mode .dropdown-menu .dropdown-item:hover {
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--scada-bg);
+  background: linear-gradient(180deg, #8C3B06 0%, #2A1206 45%, #120A05 75%, #000000 100%) no-repeat center center fixed !important;
+  background-size: cover;
   color: var(--scada-text);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Poppins', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
 }
 
@@ -300,23 +310,30 @@ datalist, select:focus, .form-select:focus {
 
 body.light-mode {
   color-scheme: light;
-  --scada-bg: #d2d3db;
-  --scada-sidebar: #e2e8f0;
-  --scada-card: #f8fafc;
-  --scada-header: #d2d3db;
-  --scada-border: rgba(0, 0, 0, 0.08);
-  --scada-text: #1e293b;
-  --scada-text-muted: #475569;
-  --scada-accent: #0284c7;
+  --scada-bg: #f8fafc; /* Crisp premium off-white background */
+  --scada-sidebar: #ffffff; /* Pure white sidebar */
+  --scada-card: #ffffff; /* Pure white cards */
+  --scada-header: rgba(255, 255, 255, 0.85); /* Transparent glass header */
+  --scada-border: rgba(0, 0, 0, 0.06); /* Very subtle border */
+  --scada-text: #0f172a; /* Deep charcoal text */
+  --scada-text-muted: #64748b; /* Slate 500 gray */
+  --scada-accent: #e05e00; /* Signature TRUEiSENSE orange */
 
-  --status-running: #047857;
-  --status-fault: #b91c1c;
-  --status-warning: #b45309;
-  --status-stopped: #475569;
+  --status-running: #10b981; /* Premium green */
+  --status-fault: #ef4444; /* Clean rose red */
+  --status-warning: #f59e0b; /* Bright warning yellow */
+  --status-stopped: #64748b; /* Slate gray */
+  
+  background: var(--scada-bg) !important;
+  background-color: var(--scada-bg) !important;
+  background-image: none !important;
 }
 
 body.light-mode .scada-header {
-  background-color: rgba(210, 211, 219, 0.9);
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--scada-border) !important;
 }
 
 body.light-mode .scada-table thead th {
@@ -641,7 +658,168 @@ body.light-mode [style*="background-color: '#111827'"] {
   background-color: var(--scada-card) !important;
   background-image: none !important;
 }
-\n/* ULTIMATE INLINE STYLE OVERRIDES FOR DARK BACKGROUNDS */\nbody.light-mode [style*="rgb(15, 23, 42)"],\nbody.light-mode [style*="#0f172a"],\nbody.light-mode [style*="rgb(30, 41, 59)"],\nbody.light-mode [style*="#1e293b"],\nbody.light-mode [style*="rgb(2, 6, 23)"],\nbody.light-mode [style*="#020617"],\nbody.light-mode [style*="rgb(17, 24, 39)"],\nbody.light-mode [style*="#111827"],\nbody.light-mode [style*="rgb(12, 18, 30)"],\nbody.light-mode [style*="#0c121e"],\nbody.light-mode [style*="rgb(11, 17, 33)"],\nbody.light-mode [style*="#0b1121"],\nbody.light-mode [style*="rgb(11, 17, 32)"],\nbody.light-mode [style*="#0b1120"],\nbody.light-mode [style*="rgb(17, 21, 28)"],\nbody.light-mode [style*="#11151c"],\nbody.light-mode [style*="rgb(15, 19, 26)"],\nbody.light-mode [style*="#0f131a"],\nbody.light-mode [style*="rgb(3, 7, 18)"],\nbody.light-mode [style*="#030712"],\nbody.light-mode [style*="rgb(5, 7, 10)"],\nbody.light-mode [style*="#05070a"],\nbody.light-mode [style*="rgb(13, 21, 37)"],\nbody.light-mode [style*="#0d1525"],\nbody.light-mode [style*="rgb(51, 65, 85)"],\nbody.light-mode [style*="#334155"],\nbody.light-mode [style*="rgb(30, 30, 30)"],\nbody.light-mode [style*="#1e1e1e"],\nbody.light-mode [style*="rgb(18, 18, 18)"],\nbody.light-mode [style*="#121212"],\nbody.light-mode [style*="rgb(10, 10, 10)"],\nbody.light-mode [style*="#0a0a0a"],\nbody.light-mode [style*="rgb(0, 0, 0)"],\nbody.light-mode [style*="#000000"],\nbody.light-mode [style*="rgb(17, 17, 17)"],\nbody.light-mode [style*="#111111"],\nbody.light-mode [style*="rgb(26, 26, 26)"],\nbody.light-mode [style*="#1a1a1a"],\nbody.light-mode [style*="rgb(26, 32, 44)"],\nbody.light-mode [style*="#1a202c"],\nbody.light-mode [style*="rgb(45, 55, 72)"],\nbody.light-mode [style*="#2d3748"],\nbody.light-mode [style*="rgb(32, 42, 59)"],\nbody.light-mode [style*="#202a3b"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.2)"],\nbody.light-mode [style*="rgba(0,0,0,0.2)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.2)"],\nbody.light-mode [style*="rgba(0,0,0,0.2)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.2)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.3)"],\nbody.light-mode [style*="rgba(0,0,0,0.3)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.3)"],\nbody.light-mode [style*="rgba(0,0,0,0.3)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.3)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.4)"],\nbody.light-mode [style*="rgba(0,0,0,0.4)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.4)"],\nbody.light-mode [style*="rgba(0,0,0,0.4)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.4)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.5)"],\nbody.light-mode [style*="rgba(0,0,0,0.5)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.5)"],\nbody.light-mode [style*="rgba(0,0,0,0.5)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.5)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.6)"],\nbody.light-mode [style*="rgba(0,0,0,0.6)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.6)"],\nbody.light-mode [style*="rgba(0,0,0,0.6)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.6)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.7)"],\nbody.light-mode [style*="rgba(0,0,0,0.7)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.7)"],\nbody.light-mode [style*="rgba(0,0,0,0.7)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.7)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.8)"],\nbody.light-mode [style*="rgba(0,0,0,0.8)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.8)"],\nbody.light-mode [style*="rgba(0,0,0,0.8)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.8)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.9)"],\nbody.light-mode [style*="rgba(0,0,0,0.9)"],\nbody.light-mode [style*="rgba(0,  0,  0,  0.9)"],\nbody.light-mode [style*="rgba(0,0,0,0.9)"],\nbody.light-mode [style*="rgba(0, 0, 0, 0.9)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.4)"],\nbody.light-mode [style*="rgba(15,23,42,0.4)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.4)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.6)"],\nbody.light-mode [style*="rgba(15,23,42,0.6)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.6)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.8)"],\nbody.light-mode [style*="rgba(15,23,42,0.8)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.8)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.95)"],\nbody.light-mode [style*="rgba(15,23,42,0.95)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.95)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.55)"],\nbody.light-mode [style*="rgba(15,23,42,0.55)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.55)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.94)"],\nbody.light-mode [style*="rgba(15,23,42,0.94)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.94)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.7)"],\nbody.light-mode [style*="rgba(15,23,42,0.7)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.7)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.85)"],\nbody.light-mode [style*="rgba(15,23,42,0.85)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.85)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.5)"],\nbody.light-mode [style*="rgba(15,23,42,0.5)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.5)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.9)"],\nbody.light-mode [style*="rgba(15,23,42,0.9)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.9)"],\nbody.light-mode [style*="rgba(15, 23, 42, 1)"],\nbody.light-mode [style*="rgba(15,23,42,1)"],\nbody.light-mode [style*="rgba(15,  23,  42,  1)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.45)"],\nbody.light-mode [style*="rgba(15,23,42,0.45)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.45)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.2)"],\nbody.light-mode [style*="rgba(15,23,42,0.2)"],\nbody.light-mode [style*="rgba(15,  23,  42,  0.2)"],\nbody.light-mode [style*="rgba(15,23,42,0.6)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.6)"],\nbody.light-mode [style*="rgba(15,23,42,0.72)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.72)"],\nbody.light-mode [style*="rgba(15,23,42,0.92)"],\nbody.light-mode [style*="rgba(15, 23, 42, 0.92)"],\nbody.light-mode [style*="rgba(30, 41, 59, 0.3)"],\nbody.light-mode [style*="rgba(30,41,59,0.3)"],\nbody.light-mode [style*="rgba(30,  41,  59,  0.3)"],\nbody.light-mode [style*="rgba(30, 41, 59, 0.4)"],\nbody.light-mode [style*="rgba(30,41,59,0.4)"],\nbody.light-mode [style*="rgba(30,  41,  59,  0.4)"],\nbody.light-mode [style*="rgba(30, 41, 59, 0.55)"],\nbody.light-mode [style*="rgba(30,41,59,0.55)"],\nbody.light-mode [style*="rgba(30,  41,  59,  0.55)"],\nbody.light-mode [style*="rgba(30, 41, 59, 0.8)"],\nbody.light-mode [style*="rgba(30,41,59,0.8)"],\nbody.light-mode [style*="rgba(30,  41,  59,  0.8)"],\nbody.light-mode [style*="rgba(10, 15, 30, 0.7)"],\nbody.light-mode [style*="rgba(10,15,30,0.7)"],\nbody.light-mode [style*="rgba(10,  15,  30,  0.7)"],\nbody.light-mode [style*="rgba(2, 6, 23, 0.6)"],\nbody.light-mode [style*="rgba(2,6,23,0.6)"],\nbody.light-mode [style*="rgba(2,  6,  23,  0.6)"],\nbody.light-mode [style*="rgba(20, 22, 27, 0.65)"],\nbody.light-mode [style*="rgba(20,22,27,0.65)"],\nbody.light-mode [style*="rgba(20,  22,  27,  0.65)"] {\n  background: var(--scada-card) !important;\n  background-color: var(--scada-card) !important;\n  background-image: none !important;\n}\n
+
+body.light-mode [style*="background-color: '#111827'"] {
+  background: var(--scada-card) !important;
+  background-color: var(--scada-card) !important;
+  background-image: none !important;
+}
+
+/* ULTIMATE INLINE STYLE OVERRIDES FOR DARK BACKGROUNDS */
+body.light-mode [style*="rgb(15, 23, 42)"],
+body.light-mode [style*="#0f172a"],
+body.light-mode [style*="rgb(30, 41, 59)"],
+body.light-mode [style*="#1e293b"],
+body.light-mode [style*="rgb(2, 6, 23)"],
+body.light-mode [style*="#020617"],
+body.light-mode [style*="rgb(17, 24, 39)"],
+body.light-mode [style*="#111827"],
+body.light-mode [style*="rgb(12, 18, 30)"],
+body.light-mode [style*="#0c121e"],
+body.light-mode [style*="rgb(11, 17, 33)"],
+body.light-mode [style*="#0b1121"],
+body.light-mode [style*="rgb(11, 17, 32)"],
+body.light-mode [style*="#0b1120"],
+body.light-mode [style*="rgb(17, 21, 28)"],
+body.light-mode [style*="#11151c"],
+body.light-mode [style*="rgb(15, 19, 26)"],
+body.light-mode [style*="#0f131a"],
+body.light-mode [style*="rgb(3, 7, 18)"],
+body.light-mode [style*="#030712"],
+body.light-mode [style*="rgb(5, 7, 10)"],
+body.light-mode [style*="#05070a"],
+body.light-mode [style*="rgb(13, 21, 37)"],
+body.light-mode [style*="#0d1525"],
+body.light-mode [style*="rgb(51, 65, 85)"],
+body.light-mode [style*="#334155"],
+body.light-mode [style*="rgb(30, 30, 30)"],
+body.light-mode [style*="#1e1e1e"],
+body.light-mode [style*="rgb(18, 18, 18)"],
+body.light-mode [style*="#121212"],
+body.light-mode [style*="rgb(10, 10, 10)"],
+body.light-mode [style*="#0a0a0a"],
+body.light-mode [style*="rgb(0, 0, 0)"],
+body.light-mode [style*="#000000"],
+body.light-mode [style*="rgb(17, 17, 17)"],
+body.light-mode [style*="#111111"],
+body.light-mode [style*="rgb(26, 26, 26)"],
+body.light-mode [style*="#1a1a1a"],
+body.light-mode [style*="rgb(26, 32, 44)"],
+body.light-mode [style*="#1a202c"],
+body.light-mode [style*="rgb(45, 55, 72)"],
+body.light-mode [style*="#2d3748"],
+body.light-mode [style*="rgb(32, 42, 59)"],
+body.light-mode [style*="#202a3b"],
+body.light-mode [style*="rgba(0, 0, 0, 0.2)"],
+body.light-mode [style*="rgba(0,0,0,0.2)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.2)"],
+body.light-mode [style*="rgba(0,0,0,0.2)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.2)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.3)"],
+body.light-mode [style*="rgba(0,0,0,0.3)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.3)"],
+body.light-mode [style*="rgba(0,0,0,0.3)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.3)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.4)"],
+body.light-mode [style*="rgba(0,0,0,0.4)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.4)"],
+body.light-mode [style*="rgba(0,0,0,0.4)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.4)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.5)"],
+body.light-mode [style*="rgba(0,0,0,0.5)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.5)"],
+body.light-mode [style*="rgba(0,0,0,0.5)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.5)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.6)"],
+body.light-mode [style*="rgba(0,0,0,0.6)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.6)"],
+body.light-mode [style*="rgba(0,0,0,0.6)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.6)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.7)"],
+body.light-mode [style*="rgba(0,0,0,0.7)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.7)"],
+body.light-mode [style*="rgba(0,0,0,0.7)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.7)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.8)"],
+body.light-mode [style*="rgba(0,0,0,0.8)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.8)"],
+body.light-mode [style*="rgba(0,0,0,0.8)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.8)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.9)"],
+body.light-mode [style*="rgba(0,0,0,0.9)"],
+body.light-mode [style*="rgba(0,  0,  0,  0.9)"],
+body.light-mode [style*="rgba(0,0,0,0.9)"],
+body.light-mode [style*="rgba(0, 0, 0, 0.9)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.4)"],
+body.light-mode [style*="rgba(15,23,42,0.4)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.4)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.6)"],
+body.light-mode [style*="rgba(15,23,42,0.6)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.6)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.8)"],
+body.light-mode [style*="rgba(15,23,42,0.8)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.8)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.95)"],
+body.light-mode [style*="rgba(15,23,42,0.95)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.95)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.55)"],
+body.light-mode [style*="rgba(15,23,42,0.55)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.55)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.94)"],
+body.light-mode [style*="rgba(15,23,42,0.94)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.94)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.7)"],
+body.light-mode [style*="rgba(15,23,42,0.7)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.7)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.85)"],
+body.light-mode [style*="rgba(15,23,42,0.85)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.85)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.5)"],
+body.light-mode [style*="rgba(15,23,42,0.5)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.5)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.9)"],
+body.light-mode [style*="rgba(15,23,42,0.9)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.9)"],
+body.light-mode [style*="rgba(15, 23, 42, 1)"],
+body.light-mode [style*="rgba(15,23,42,1)"],
+body.light-mode [style*="rgba(15,  23,  42,  1)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.45)"],
+body.light-mode [style*="rgba(15,23,42,0.45)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.45)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.2)"],
+body.light-mode [style*="rgba(15,23,42,0.2)"],
+body.light-mode [style*="rgba(15,  23,  42,  0.2)"],
+body.light-mode [style*="rgba(15,23,42,0.6)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.6)"],
+body.light-mode [style*="rgba(15,23,42,0.72)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.72)"],
+body.light-mode [style*="rgba(15,23,42,0.92)"],
+body.light-mode [style*="rgba(15, 23, 42, 0.92)"],
+body.light-mode [style*="rgba(30, 41, 59, 0.3)"],
+body.light-mode [style*="rgba(30,41,59,0.3)"],
+body.light-mode [style*="rgba(30,  41,  59,  0.3)"],
+body.light-mode [style*="rgba(30, 41, 59, 0.4)"],
+body.light-mode [style*="rgba(30,41,59,0.4)"],
+body.light-mode [style*="rgba(30,  41,  59,  0.4)"],
+body.light-mode [style*="rgba(30, 41, 59, 0.55)"],
+body.light-mode [style*="rgba(30,41,59,0.55)"],
+body.light-mode [style*="rgba(30,  41,  59,  0.55)"],
+body.light-mode [style*="rgba(30, 41, 59, 0.8)"],
+body.light-mode [style*="rgba(30,41,59,0.8)"],
+body.light-mode [style*="rgba(30,  41,  59,  0.8)"],
+body.light-mode [style*="rgba(10, 15, 30, 0.7)"],
+body.light-mode [style*="rgba(10,15,30,0.7)"],
+body.light-mode [style*="rgba(10,  15,  30,  0.7)"],
+body.light-mode [style*="rgba(2, 6, 23, 0.6)"],
+body.light-mode [style*="rgba(2,6,23,0.6)"],
+body.light-mode [style*="rgba(2,  6,  23,  0.6)"],
+body.light-mode [style*="rgba(20, 22, 27, 0.65)"],
+body.light-mode [style*="rgba(20,22,27,0.65)"],
+body.light-mode [style*="rgba(20,  22,  27,  0.65)"] {
+  background: var(--scada-card) !important;
+  background-color: var(--scada-card) !important;
+  background-image: none !important;
+}
 
 /* BOOTSTRAP DARK UTILITY OVERRIDES FOR LIGHT MODE */
 body.light-mode .bg-black,
@@ -1210,3 +1388,289 @@ body.light-mode .VRV-room-card:hover {
     box-shadow: rgba(0, 0, 0, 0.45) 0px 8px 20px !important;
     transform: translateY(-2px);
 }
+
+/* =========================================================
+   GLOBAL ORANGE/BROWN THEME ACCENTS AND UTILITIES OVERRIDES
+   ========================================================= */
+
+/* Bootstrap Overrides */
+.text-info {
+  color: var(--scada-accent) !important;
+}
+.bg-info {
+  background-color: rgba(224, 94, 0, var(--bs-bg-opacity, 1)) !important;
+}
+.border-info {
+  border-color: rgba(224, 94, 0, var(--bs-border-opacity, 1)) !important;
+}
+.text-primary {
+  color: var(--scada-accent) !important;
+}
+.bg-primary {
+  background-color: rgba(224, 94, 0, var(--bs-bg-opacity, 1)) !important;
+}
+.border-primary {
+  border-color: rgba(224, 94, 0, var(--bs-border-opacity, 1)) !important;
+}
+
+/* Glow styles */
+.accent-glow {
+  text-shadow: 0 0 10px rgba(224, 94, 0, 0.5) !important;
+}
+
+/* Button primary override for orange-brown theme */
+.btn-primary {
+  background: linear-gradient(135deg, #e05e00, #8c3b06) !important;
+  border-color: #8c3b06 !important;
+  color: #ffffff !important;
+}
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+  background: linear-gradient(135deg, #f97316, #b45309) !important;
+  border-color: #b45309 !important;
+  box-shadow: 0 0 0 0.25rem rgba(224, 94, 0, 0.25) !important;
+}
+
+/* Accordion Active overrides */
+.accordion-button:not(.collapsed) {
+  background-color: rgba(224, 94, 0, 0.15) !important;
+  color: var(--scada-accent) !important;
+}
+
+/* Form inputs focus override */
+.form-control:focus, .form-select:focus {
+  border-color: var(--scada-accent) !important;
+  box-shadow: 0 0 0 0.25rem rgba(224, 94, 0, 0.25) !important;
+}
+
+/* Custom styles for inline blue properties */
+
+/* Text colors */
+[style*="color"][style*="#0ea5e9"],
+[style*="color"][style*="#0EA5E9"],
+[style*="color"][style*="#38bdf8"],
+[style*="color"][style*="#38BDF8"],
+[style*="color"][style*="#3b82f6"],
+[style*="color"][style*="#2563eb"],
+[style*="color"][style*="#0284c7"] {
+  color: var(--scada-accent) !important;
+}
+
+/* Background colors */
+[style*="background"][style*="#0ea5e9"],
+[style*="background"][style*="#0EA5E9"],
+[style*="background"][style*="#38bdf8"],
+[style*="background"][style*="#38BDF8"],
+[style*="background"][style*="#3b82f6"],
+[style*="background"][style*="#2563eb"],
+[style*="background"][style*="#0284c7"],
+[style*="backgroundColor"][style*="#0ea5e9"],
+[style*="backgroundColor"][style*="#0EA5E9"],
+[style*="backgroundColor"][style*="#38bdf8"],
+[style*="backgroundColor"][style*="#38BDF8"],
+[style*="backgroundColor"][style*="#3b82f6"],
+[style*="backgroundColor"][style*="#2563eb"],
+[style*="backgroundColor"][style*="#0284c7"] {
+  background-color: var(--scada-card) !important;
+  background-image: none !important;
+}
+
+/* Gradients containing blue/cyan */
+[style*="linear-gradient"][style*="#0ea5e9"],
+[style*="linear-gradient"][style*="#38bdf8"],
+[style*="linear-gradient"][style*="#3b82f6"],
+[style*="linear-gradient"][style*="#2563eb"],
+[style*="linear-gradient"][style*="#0284c7"] {
+  background: linear-gradient(135deg, #e05e00, #8c3b06) !important;
+}
+
+/* Borders */
+[style*="border"][style*="#0ea5e9"],
+[style*="border"][style*="#38bdf8"],
+[style*="border"][style*="#3b82f6"],
+[style*="border"][style*="#2563eb"],
+[style*="border"][style*="#0284c7"],
+[style*="borderColor"][style*="#0ea5e9"],
+[style*="borderColor"][style*="#38bdf8"],
+[style*="borderColor"][style*="#3b82f6"],
+[style*="borderColor"][style*="#2563eb"],
+[style*="borderColor"][style*="#0284c7"] {
+  border-color: var(--scada-accent) !important;
+}
+
+/* Active highlights on all pages */
+.text-accent {
+  color: var(--scada-accent) !important;
+}
+.bg-accent {
+  background-color: var(--scada-accent) !important;
+}
+
+/* =========================================================
+   GLOBAL CARD & CONTAINER ACCENTS AND THEME OVERRIDES
+   ========================================================= */
+
+/* Overriding all card/panel containers globally to match the warm dark brown theme */
+.card,
+.scada-card,
+.bg-panel,
+.dash-card,
+.premium-figma-card,
+.selected-premium-card,
+.configuration-form-wrapper,
+.scada-glass-card,
+.scada-section-box,
+.parameter-glass-card,
+.scada-gauge-card,
+.scada-glass-section,
+.telemetry-card-glow,
+.grouping-panel,
+.glass-card,
+.glass-panel,
+.admin-header-card,
+.VRV-room-card,
+.hs-card-glow,
+.control-box,
+.filter-tile,
+.status-filter-card,
+.mgmt-header,
+.preview-item,
+.mini-sidebar-preview {
+  background-color: var(--scada-card) !important;
+  background: var(--scada-card) !important;
+  border: 1px solid var(--scada-border) !important;
+  border-color: var(--scada-border) !important;
+  box-shadow: rgba(0, 0, 0, 0.45) 0px 5px 15px, inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  color: var(--scada-text) !important;
+}
+
+/* Hover elevation/raised look for cards */
+.card:hover,
+.scada-card:hover,
+.bg-panel:hover,
+.dash-card:hover,
+.premium-figma-card:hover,
+.VRV-room-card:hover,
+.preview-item:hover {
+  border-color: var(--scada-accent) !important;
+  box-shadow: rgba(224, 94, 0, 0.15) 0px 8px 24px, rgba(0, 0, 0, 0.5) 0px 8px 20px !important;
+  transform: translateY(-2px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Intercept inline style backgrounds matching slate-blue #0f172a and #1e293b */
+[style*="#0f172a"],
+[style*="#0F172A"],
+[style*="#1e293b"],
+[style*="#1E293B"] {
+  background-color: var(--scada-card) !important;
+  background: var(--scada-card) !important;
+  border-color: var(--scada-border) !important;
+}
+
+/* Intercept specific inline gradients matching dark blue */
+[style*="linear-gradient"][style*="#0f172a"],
+[style*="linear-gradient"][style*="#020617"],
+[style*="linear-gradient"][style*="#1e293b"] {
+  background: linear-gradient(145deg, var(--scada-card) 0%, var(--scada-bg) 100%) !important;
+}
+
+/* =========================================================
+   GLOBAL FORM CHECK SWITCHES, TOGGLES, RADIOS, AND CHECKBOXES OVERRIDES
+   ========================================================= */
+
+/* Overriding checked switches, checkboxes, and radios globally to match the warm theme */
+.form-check-input:checked,
+.form-check-input[type="checkbox"]:checked,
+.form-check-input[type="radio"]:checked,
+.scada-switch .form-check-input:checked,
+.scada-switch.success .form-check-input:checked,
+.scada-radio .form-check-input:checked,
+.scada-checkbox .form-check-input:checked,
+.hs-custom-switch .form-check-input:checked,
+.custom-switch-success .form-check-input:checked,
+.custom-switch .form-check-input:checked,
+.form-switch .form-check-input:checked {
+  background-color: var(--scada-accent) !important;
+  border-color: var(--scada-accent) !important;
+  box-shadow: 0 0 10px rgba(224, 94, 0, 0.5) !important;
+}
+
+/* Checkbox specific ticks styling to ensure they remain visible and white */
+.form-check-input[type="checkbox"]:checked,
+.scada-checkbox .form-check-input:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e") !important;
+}
+
+/* Round switch toggle knobs styling */
+.form-switch .form-check-input:checked {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3ccircle cx='10' cy='10' r='6' fill='%23fff'/%3e%3c/svg%3e") !important;
+}
+
+/* Custom switch sliders like SiteManagement's .sm2-switch */
+.sm2-switch input:checked + .sm2-slider {
+  background-color: rgba(224, 94, 0, 0.18) !important;
+  border-color: rgba(224, 94, 0, 0.5) !important;
+  box-shadow: none !important;
+}
+.sm2-switch input:checked + .sm2-slider:before {
+  background-color: #e05e00 !important;
+  transform: translateX(18px) !important;
+  box-shadow: 0 0 8px rgba(224, 94, 0, 0.55) !important;
+}
+
+/* =========================================================
+   GLOBAL BOOTSTRAP INFO BUTTONS & GLOW UTILITIES OVERRIDES
+   ========================================================= */
+
+/* Overriding Bootstrap Info Buttons globally */
+.btn-info {
+  background: linear-gradient(135deg, #e05e00, #8c3b06) !important;
+  border-color: #8c3b06 !important;
+  color: #ffffff !important;
+}
+.btn-info:hover, .btn-info:focus, .btn-info:active {
+  background: linear-gradient(135deg, #f97316, #b45309) !important;
+  border-color: #b45309 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 0.25rem rgba(224, 94, 0, 0.25) !important;
+}
+.btn-outline-info {
+  color: var(--scada-accent) !important;
+  border-color: var(--scada-accent) !important;
+}
+.btn-outline-info:hover, .btn-outline-info:focus, .btn-outline-info:active {
+  background-color: var(--scada-accent) !important;
+  border-color: var(--scada-accent) !important;
+  color: #ffffff !important;
+}
+
+/* Custom glow utility overrides */
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(224, 94, 0, 0.25) !important;
+}
+.shadow-glow-blue {
+  box-shadow: 0 0 15px rgba(224, 94, 0, 0.25) !important;
+}
+.text-glow-blue {
+  text-shadow: 0 0 15px rgba(224, 94, 0, 0.6) !important;
+}
+.hover-border-info:hover {
+  border-color: var(--scada-accent) !important;
+}
+.icon-box-premium.info {
+  border-color: rgba(224, 94, 0, 0.3) !important;
+  box-shadow: 0 0 12px rgba(224, 94, 0, 0.1) !important;
+  color: var(--scada-accent) !important;
+}
+
+/* Selected premium active cards */
+.selected-premium-card {
+  background: linear-gradient(145deg, rgba(224, 94, 0, 0.1) 0%, #160C06 100%) !important;
+  border-color: rgba(224, 94, 0, 0.6) !important;
+  box-shadow: 0 0 40px rgba(224, 94, 0, 0.2), inset 0 0 20px rgba(224, 94, 0, 0.05) !important;
+}
+.selected-premium-card::after {
+  background: radial-gradient(circle at top left, rgba(224, 94, 0, 0.15), transparent 70%) !important;
+}
+
+

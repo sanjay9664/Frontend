@@ -583,8 +583,16 @@ const UgTank = () => {
 
   const handlePumpControl = async (id, updates) => {
     const userRole = (localStorage.getItem('userRole') || 'user').toUpperCase();
-    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
-      setActionFeedback("ACCESS DENIED: ADMIN ONLY");
+    let hasWriteAccess = false;
+    try {
+      const perms = JSON.parse(localStorage.getItem('scada_feature_permissions') || '{}');
+      if (perms.showWaterManagement_write === true) {
+        hasWriteAccess = true;
+      }
+    } catch (e) {}
+
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && !hasWriteAccess) {
+      setActionFeedback("ACCESS DENIED: ADMIN OR WRITE PRIVILEGES ONLY");
       setTimeout(() => setActionFeedback(null), 1500);
       return;
     }
@@ -682,6 +690,21 @@ const UgTank = () => {
   };
 
   const handleSendRuleToEngine = async (limitType) => {
+    const userRole = (localStorage.getItem('userRole') || 'user').toUpperCase();
+    let hasWriteAccess = false;
+    try {
+      const perms = JSON.parse(localStorage.getItem('scada_feature_permissions') || '{}');
+      if (perms.showWaterManagement_write === true) {
+        hasWriteAccess = true;
+      }
+    } catch (e) {}
+
+    if (userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN' && !hasWriteAccess) {
+      setActionFeedback("ACCESS DENIED: ADMIN OR WRITE PRIVILEGES ONLY");
+      setTimeout(() => setActionFeedback(null), 1500);
+      return;
+    }
+
     if (!selectedPump) return;
 
     if (!limitForm.start || !limitForm.stop || Number(limitForm.start) === 0 || Number(limitForm.stop) === 0) {
